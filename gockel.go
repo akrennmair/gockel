@@ -14,7 +14,7 @@ type Timeline struct {
 type Tweet struct {
 	Favorited bool
 	In_reply_to_status_id *int64
-	//Retweet_count *string
+	Retweet_count interface{}
 	In_reply_to_screen_name *string
 	Place *PlaceDesc
 	Truncated bool
@@ -99,7 +99,16 @@ func main() {
 
 	if jsonerr := json.Unmarshal(body, &home_tl.Tweets); jsonerr == nil {
 		for _, tweet := range home_tl.Tweets {
-			fmt.Printf("[%s] %s\n", *tweet.User.Screen_name, *tweet.Text)
+			rt_count, okstr := tweet.Retweet_count.(string)
+			if !okstr {
+				rt_count_int, okint := tweet.Retweet_count.(int)
+				if !okint {
+					rt_count = "0"
+				} else {
+					rt_count = fmt.Sprintf("%d", rt_count_int)
+				}
+			}
+			fmt.Printf("[%s] %s (%s)\n", *tweet.User.Screen_name, *tweet.Text, rt_count)
 		}
 	} else {
 		fmt.Println(jsonerr.String())
