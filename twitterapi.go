@@ -315,6 +315,25 @@ func(tapi *TwitterAPI) RetweetedByIds(tweet_id int64, count uint) (*UserIdList, 
 	return uidl, nil
 }
 
+func(tapi *TwitterAPI) Update(text string) os.Error {
+	resp, err := tapi.authcon.Post(
+		"https://api.twitter.com/1/statuses/update.json",
+		oauth.Params{ 
+			&oauth.Pair{ 
+				Key: "status", 
+				Value: text,
+			},
+		}, tapi.access_token )
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode == 403 {
+		return os.NewError(resp.Status)
+	}
+
+	return nil
+}
+
 func(tapi *TwitterAPI) get_timeline(tl_name string, p ...*oauth.Pair) (*Timeline, os.Error) {
 	jsondata, err := tapi.get_statuses(tl_name, p...)
 	if err != nil {

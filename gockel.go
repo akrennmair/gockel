@@ -47,7 +47,7 @@ func main() {
 
 		for {
 
-			home_tl, err := tapi.HomeTimeline(0, last_id)
+			home_tl, err := tapi.HomeTimeline(50, last_id)
 
 			if err != nil {
 				//fmt.Println(err.String())
@@ -170,7 +170,7 @@ func formatTweets(tweets []Tweet) string {
 	buf := bytes.NewBufferString("{list")
 
 	for _, t := range tweets {
-		tweetline := fmt.Sprintf("[%s] %s", *t.User.Screen_name, *t.Text)
+		tweetline := fmt.Sprintf("[%16s] %s", "@" + *t.User.Screen_name, *t.Text)
 		buf.WriteString("{listitem text:")
 		buf.WriteString(stfl.Quote(tweetline))
 		buf.WriteString("}")
