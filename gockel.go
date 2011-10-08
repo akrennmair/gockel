@@ -8,7 +8,7 @@ import (
 	"time"
 	"bytes"
 	stfl "github.com/akrennmair/go-stfl"
-	oauth "github.com/hokapoka/goauth"
+	oauth "github.com/akrennmair/goauth"
 )
 
 func main() {
@@ -41,27 +41,35 @@ func main() {
 
 	newtweetchan := make(chan []Tweet, 1)
 	viewchan := make(chan []Tweet, 1)
+	updatechan := make(chan string, 1)
+
+	tickchan := make(chan int, 1)
+	go Ticker(tickchan, 20e9)
 
 	go func() {
 		last_id := int64(0)
 
 		for {
 
-			home_tl, err := tapi.HomeTimeline(50, last_id)
+			select {
+			case tweet := <-updatechan:
+				tapi.Update(tweet)
+			case <-tickchan:
+				home_tl, err := tapi.HomeTimeline(50, last_id)
 
-			if err != nil {
-				//fmt.Println(err.String())
-				//TODO: signal error
-			} else {
-				if len(home_tl.Tweets) > 0 {
-					newtweetchan <- home_tl.Tweets
-					if home_tl.Tweets[0].Id != nil {
-						last_id = *home_tl.Tweets[0].Id
+				if err != nil {
+					//fmt.Println(err.String())
+					//TODO: signal error
+				} else {
+					if len(home_tl.Tweets) > 0 {
+						newtweetchan <- home_tl.Tweets
+						if home_tl.Tweets[0].Id != nil {
+							last_id = *home_tl.Tweets[0].Id
+						}
 					}
 				}
 			}
 
-			time.Sleep(20e9)
 		}
 	}()
 
@@ -107,7 +115,7 @@ func main() {
 		case "end-input":
 			tweet_text := form.Get("inputfield")
 			if len(tweet_text) > 0 {
-				go tapi.Update(tweet_text)
+				updatechan <-tweet_text
 			}
 			ResetLastLine(form)
 		case "cancel-input":
@@ -183,4 +191,11 @@ func formatTweets(tweets []Tweet) string {
 
 	buf.WriteString("}")
 	return string(buf.Bytes())
+}
+
+func Ticker(tickchan chan int, ns int64) {
+	for {
+		tickchan <-1
+		time.Sleep(ns)
+	}
 }
