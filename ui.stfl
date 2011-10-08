@@ -1,0 +1,21 @@
+vbox[root]
+  hbox
+    .expand:0
+    @style_normal:bg=blue,fg=white,attr=bold
+    label text[program]:"" .expand:h
+    label .tie:r text[rateinfo]:"-1/-1" .expand:0
+  vbox
+    @style_1_normal:fg=yellow,bg=red,attr=bold
+    .expand:vh
+    list[tweets]
+      style_focus[listfocus]:fg=yellow,bg=blue,attr=bold
+      .expand:vh
+      pos[tweetpos]:0
+  vbox
+    .expand:0
+    .display:1
+    label text[infoline]:">> " .expand:h style_normal:bg=blue,fg=yellow,attr=bold
+    label text[shorthelp]:"" .expand:h style_normal:bg=blue,fg=white,attr=bold
+  hbox[lastline]
+    .expand:0
+    label text[msg]:"" .expand:h
