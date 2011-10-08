@@ -13,14 +13,14 @@ type Timeline struct {
 }
 
 type Tweet struct {
-	Favorited bool
+	Favorited *bool
 	In_reply_to_status_id *int64
 	Retweet_count interface{}
 	In_reply_to_screen_name *string
 	Place *PlaceDesc
-	Truncated bool
+	Truncated *bool
 	User *TwitterUser
-	Retweeted bool
+	Retweeted *bool
 	In_reply_to_status_id_str *string
 	In_reply_to_user_id_str *string
 	In_reply_to_user_id *int64
@@ -33,10 +33,10 @@ type Tweet struct {
 }
 
 type TwitterUser struct {
-	Protected bool
+	Protected *bool
 	Listed_count int
 	Name *string
-	Verified bool
+	Verified *bool
 	Lang *string
 	Time_zone *string
 	Description *string
@@ -44,8 +44,8 @@ type TwitterUser struct {
 	Statuses_count int
 	Url *string
 	Screen_name *string
-	Follow_request_sent bool
-	Following bool
+	Follow_request_sent *bool
+	Following *bool
 	Friends_count *int64
 	Favourites_count *int64
 	Followers_count *int64
@@ -104,15 +104,176 @@ func(tapi *TwitterAPI) GetAccessToken() *oauth.AccessToken {
 }
 
 func(tapi *TwitterAPI) HomeTimeline(count uint, since_id int64) (*Timeline, os.Error) {
+	return tapi.get_statuses("home_timeline", 
+		func() *oauth.Pair { 
+			if count != 0 { 
+				return &oauth.Pair{ "count", strconv.Uitoa(count) }
+			}
+			return nil
+		}(),
+		func() *oauth.Pair { 
+			if since_id != 0 { 
+				return &oauth.Pair{ "since_id", strconv.Itoa64(since_id) }
+			}
+			return nil
+		}() )
+}
+
+func(tapi *TwitterAPI) Mentions(count uint, since_id int64) (*Timeline, os.Error) {
+	return tapi.get_statuses("mentions", 
+		func() *oauth.Pair { 
+			if count != 0 { 
+				return &oauth.Pair{ "count", strconv.Uitoa(count) }
+			}
+			return nil
+		}(),
+		func() *oauth.Pair { 
+			if since_id != 0 { 
+				return &oauth.Pair{ "since_id", strconv.Itoa64(since_id) }
+			}
+			return nil
+		}() )
+}
+
+func(tapi *TwitterAPI) PublicTimeline(count uint, since_id int64) (*Timeline, os.Error) {
+	return tapi.get_statuses("public_timeline", 
+		func() *oauth.Pair { 
+			if count != 0 { 
+				return &oauth.Pair{ "count", strconv.Uitoa(count) }
+			}
+			return nil
+		}(),
+		func() *oauth.Pair { 
+			if since_id != 0 { 
+				return &oauth.Pair{ "since_id", strconv.Itoa64(since_id) }
+			}
+			return nil
+		}() )
+}
+
+func(tapi *TwitterAPI) RetweetedByMe(count uint, since_id int64) (*Timeline, os.Error) {
+	return tapi.get_statuses("retweeted_by_me", 
+		func() *oauth.Pair { 
+			if count != 0 { 
+				return &oauth.Pair{ "count", strconv.Uitoa(count) }
+			}
+			return nil
+		}(),
+		func() *oauth.Pair { 
+			if since_id != 0 { 
+				return &oauth.Pair{ "since_id", strconv.Itoa64(since_id) }
+			}
+			return nil
+		}() )
+}
+
+func(tapi *TwitterAPI) RetweetedToMe(count uint, since_id int64) (*Timeline, os.Error) {
+	return tapi.get_statuses("retweeted_to_me", 
+		func() *oauth.Pair { 
+			if count != 0 { 
+				return &oauth.Pair{ "count", strconv.Uitoa(count) }
+			}
+			return nil
+		}(),
+		func() *oauth.Pair { 
+			if since_id != 0 { 
+				return &oauth.Pair{ "since_id", strconv.Itoa64(since_id) }
+			}
+			return nil
+		}() )
+}
+
+func(tapi *TwitterAPI) RetweetsOfMe(count uint, since_id int64) (*Timeline, os.Error) {
+	return tapi.get_statuses("retweets_of_me", 
+		func() *oauth.Pair { 
+			if count != 0 { 
+				return &oauth.Pair{ "count", strconv.Uitoa(count) }
+			}
+			return nil
+		}(),
+		func() *oauth.Pair { 
+			if since_id != 0 { 
+				return &oauth.Pair{ "since_id", strconv.Itoa64(since_id) }
+			}
+			return nil
+		}() )
+}
+
+func(tapi *TwitterAPI) UserTimeline(screen_name string, count uint, since_id int64) (*Timeline, os.Error) {
+	return tapi.get_statuses("user_timeline", 
+		func() *oauth.Pair { 
+			if count != 0 { 
+				return &oauth.Pair{ "count", strconv.Uitoa(count) }
+			}
+			return nil
+		}(),
+		func() *oauth.Pair { 
+			if since_id != 0 { 
+				return &oauth.Pair{ "since_id", strconv.Itoa64(since_id) }
+			}
+			return nil
+		}(),
+		func() *oauth.Pair {
+			if screen_name != "" {
+				return &oauth.Pair{ "screen_name", screen_name }
+			}
+			return nil
+		}() )
+}
+
+func(tapi *TwitterAPI) RetweetedToUser(screen_name string, count uint, since_id int64) (*Timeline, os.Error) {
+	return tapi.get_statuses("retweeted_to_user", 
+		func() *oauth.Pair { 
+			if count != 0 { 
+				return &oauth.Pair{ "count", strconv.Uitoa(count) }
+			}
+			return nil
+		}(),
+		func() *oauth.Pair { 
+			if since_id != 0 { 
+				return &oauth.Pair{ "since_id", strconv.Itoa64(since_id) }
+			}
+			return nil
+		}(),
+		func() *oauth.Pair {
+			if screen_name != "" {
+				return &oauth.Pair{ "screen_name", screen_name }
+			}
+			return nil
+		}() )
+}
+
+func(tapi *TwitterAPI) RetweetedByUser(screen_name string, count uint, since_id int64) (*Timeline, os.Error) {
+	return tapi.get_statuses("retweeted_by_user", 
+		func() *oauth.Pair { 
+			if count != 0 { 
+				return &oauth.Pair{ "count", strconv.Uitoa(count) }
+			}
+			return nil
+		}(),
+		func() *oauth.Pair { 
+			if since_id != 0 { 
+				return &oauth.Pair{ "since_id", strconv.Itoa64(since_id) }
+			}
+			return nil
+		}(),
+		func() *oauth.Pair {
+			if screen_name != "" {
+				return &oauth.Pair{ "screen_name", screen_name }
+			}
+			return nil
+		}() )
+}
+
+func(tapi *TwitterAPI) get_statuses(tl_name string, p ...*oauth.Pair) (*Timeline, os.Error) {
 	var params oauth.Params
-	if count != 0 {
-		params.Add(&oauth.Pair{ "count", strconv.Uitoa(count) })
-	}
-	if since_id != 0 {
-		params.Add(&oauth.Pair{ "since_id", strconv.Itoa64(since_id) })
+	for _, x := range p {
+		if x != nil {
+			params.Add(x)
+		}
 	}
 
-	resp, geterr := tapi.authcon.Get("https://api.twitter.com/1/statuses/home_timeline.json", params, tapi.access_token)
+	resp, geterr := tapi.authcon.Get("https://api.twitter.com/1/statuses/" + tl_name + ".json", params, tapi.access_token)
 	if geterr != nil {
 		return nil, geterr
 	}
@@ -122,11 +283,11 @@ func(tapi *TwitterAPI) HomeTimeline(count uint, since_id int64) (*Timeline, os.E
 		return nil, readerr
 	}
 
-	home_tl := &Timeline{}
+	tl := &Timeline{}
 
-	if jsonerr := json.Unmarshal(bodydata, &home_tl.Tweets); jsonerr != nil {
+	if jsonerr := json.Unmarshal(bodydata, &tl.Tweets); jsonerr != nil {
 		return nil, jsonerr
 	}
 
-	return home_tl, nil
+	return tl, nil
 }
