@@ -101,28 +101,32 @@ func main() {
 	event := ""
 	for event != "q" {
 		event = form.Run(0)
+		switch event {
+		case "ENTER":
+			SetInputField(form, "Tweet: ", "", "end-input")
+		case "end-input":
+			tweet_text := form.Get("inputfield")
+			if len(tweet_text) > 0 {
+				go tapi.Update(tweet_text)
+			}
+			ResetLastLine(form)
+		case "cancel-input":
+			ResetLastLine(form)
+		}
 	}
 
 	stfl.Reset()
+}
 
+func SetInputField(form *stfl.Form, prompt, deftext, endevent string) {
+	last_line_text := "{hbox[lastline] .expand:0 {label .expand:0 text[prompt]:" + stfl.Quote(prompt) + "}{input[tweetinput] on_ESC:cancel-input on_ENTER:" + endevent + " modal:1 .expand:h text[inputfield]:" + stfl.Quote(deftext) + "}}"
 
-//	foo, posterr := goauthcon.Post(
-//		"http://api.twitter.com/1/statuses/update.json",
-//		oauth.Params{
-//			&oauth.Pair{
-//				Key:"status",
-//				Value:"Test posting using Gockel prototype",
-//			},
-//		}, at )
-//
-//	fmt.Printf("foo = %v\n", foo)
-//
-//	if posterr != nil {
-//		fmt.Println(err.String())
-//		return
-//	}
-//
-//	fmt.Println("Twitter Status is updated")
+	form.Modify("lastline", "replace", last_line_text)
+	form.SetFocus("tweetinput")
+}
+
+func ResetLastLine(form *stfl.Form) {
+	form.Modify("lastline", "replace", "{hbox[lastline] .expand:0 {label text[msg]:\"\" .expand:h}}")
 }
 
 func SaveAccessToken(at *oauth.AccessToken) os.Error {
