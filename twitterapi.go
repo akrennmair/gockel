@@ -12,6 +12,14 @@ type Timeline struct {
 	Tweets []Tweet
 }
 
+type UserList struct {
+	Users []TwitterUser
+}
+
+type UserIdList struct {
+	Ids []int64
+}
+
 type Tweet struct {
 	Favorited *bool
 	In_reply_to_status_id *int64
@@ -104,7 +112,7 @@ func(tapi *TwitterAPI) GetAccessToken() *oauth.AccessToken {
 }
 
 func(tapi *TwitterAPI) HomeTimeline(count uint, since_id int64) (*Timeline, os.Error) {
-	return tapi.get_statuses("home_timeline", 
+	return tapi.get_timeline("home_timeline", 
 		func() *oauth.Pair { 
 			if count != 0 { 
 				return &oauth.Pair{ "count", strconv.Uitoa(count) }
@@ -120,7 +128,7 @@ func(tapi *TwitterAPI) HomeTimeline(count uint, since_id int64) (*Timeline, os.E
 }
 
 func(tapi *TwitterAPI) Mentions(count uint, since_id int64) (*Timeline, os.Error) {
-	return tapi.get_statuses("mentions", 
+	return tapi.get_timeline("mentions", 
 		func() *oauth.Pair { 
 			if count != 0 { 
 				return &oauth.Pair{ "count", strconv.Uitoa(count) }
@@ -136,7 +144,7 @@ func(tapi *TwitterAPI) Mentions(count uint, since_id int64) (*Timeline, os.Error
 }
 
 func(tapi *TwitterAPI) PublicTimeline(count uint, since_id int64) (*Timeline, os.Error) {
-	return tapi.get_statuses("public_timeline", 
+	return tapi.get_timeline("public_timeline", 
 		func() *oauth.Pair { 
 			if count != 0 { 
 				return &oauth.Pair{ "count", strconv.Uitoa(count) }
@@ -152,7 +160,7 @@ func(tapi *TwitterAPI) PublicTimeline(count uint, since_id int64) (*Timeline, os
 }
 
 func(tapi *TwitterAPI) RetweetedByMe(count uint, since_id int64) (*Timeline, os.Error) {
-	return tapi.get_statuses("retweeted_by_me", 
+	return tapi.get_timeline("retweeted_by_me", 
 		func() *oauth.Pair { 
 			if count != 0 { 
 				return &oauth.Pair{ "count", strconv.Uitoa(count) }
@@ -168,7 +176,7 @@ func(tapi *TwitterAPI) RetweetedByMe(count uint, since_id int64) (*Timeline, os.
 }
 
 func(tapi *TwitterAPI) RetweetedToMe(count uint, since_id int64) (*Timeline, os.Error) {
-	return tapi.get_statuses("retweeted_to_me", 
+	return tapi.get_timeline("retweeted_to_me", 
 		func() *oauth.Pair { 
 			if count != 0 { 
 				return &oauth.Pair{ "count", strconv.Uitoa(count) }
@@ -184,7 +192,7 @@ func(tapi *TwitterAPI) RetweetedToMe(count uint, since_id int64) (*Timeline, os.
 }
 
 func(tapi *TwitterAPI) RetweetsOfMe(count uint, since_id int64) (*Timeline, os.Error) {
-	return tapi.get_statuses("retweets_of_me", 
+	return tapi.get_timeline("retweets_of_me", 
 		func() *oauth.Pair { 
 			if count != 0 { 
 				return &oauth.Pair{ "count", strconv.Uitoa(count) }
@@ -200,7 +208,7 @@ func(tapi *TwitterAPI) RetweetsOfMe(count uint, since_id int64) (*Timeline, os.E
 }
 
 func(tapi *TwitterAPI) UserTimeline(screen_name string, count uint, since_id int64) (*Timeline, os.Error) {
-	return tapi.get_statuses("user_timeline", 
+	return tapi.get_timeline("user_timeline", 
 		func() *oauth.Pair { 
 			if count != 0 { 
 				return &oauth.Pair{ "count", strconv.Uitoa(count) }
@@ -222,7 +230,7 @@ func(tapi *TwitterAPI) UserTimeline(screen_name string, count uint, since_id int
 }
 
 func(tapi *TwitterAPI) RetweetedToUser(screen_name string, count uint, since_id int64) (*Timeline, os.Error) {
-	return tapi.get_statuses("retweeted_to_user", 
+	return tapi.get_timeline("retweeted_to_user", 
 		func() *oauth.Pair { 
 			if count != 0 { 
 				return &oauth.Pair{ "count", strconv.Uitoa(count) }
@@ -244,7 +252,7 @@ func(tapi *TwitterAPI) RetweetedToUser(screen_name string, count uint, since_id 
 }
 
 func(tapi *TwitterAPI) RetweetedByUser(screen_name string, count uint, since_id int64) (*Timeline, os.Error) {
-	return tapi.get_statuses("retweeted_by_user", 
+	return tapi.get_timeline("retweeted_by_user", 
 		func() *oauth.Pair { 
 			if count != 0 { 
 				return &oauth.Pair{ "count", strconv.Uitoa(count) }
@@ -265,7 +273,64 @@ func(tapi *TwitterAPI) RetweetedByUser(screen_name string, count uint, since_id 
 		}() )
 }
 
-func(tapi *TwitterAPI) get_statuses(tl_name string, p ...*oauth.Pair) (*Timeline, os.Error) {
+func(tapi *TwitterAPI) RetweetedBy(tweet_id int64, count uint) (*UserList, os.Error) {
+	jsondata, err := tapi.get_statuses(strconv.Itoa64(tweet_id) + "/retweeted_by",
+		func() *oauth.Pair {
+			if count != 0 {
+				return &oauth.Pair{ "count", strconv.Uitoa(count) }
+			}
+			return nil
+		}() )
+	if err != nil {
+		return nil, err
+	}
+
+	ul := &UserList{}
+
+	if jsonerr := json.Unmarshal(jsondata, &ul.Users); jsonerr != nil {
+		return nil, jsonerr
+	}
+
+	return ul, nil
+}
+
+func(tapi *TwitterAPI) RetweetedByIds(tweet_id int64, count uint) (*UserIdList, os.Error) {
+	jsondata, err := tapi.get_statuses(strconv.Itoa64(tweet_id) + "/retweeted_by/ids",
+		func() *oauth.Pair {
+			if count != 0 {
+				return &oauth.Pair{ "count", strconv.Uitoa(count) }
+			}
+			return nil
+		}() )
+	if err != nil {
+		return nil, err
+	}
+
+	uidl := &UserIdList{}
+
+	if jsonerr := json.Unmarshal(jsondata, &uidl.Ids); jsonerr != nil {
+		return nil, jsonerr
+	}
+
+	return uidl, nil
+}
+
+func(tapi *TwitterAPI) get_timeline(tl_name string, p ...*oauth.Pair) (*Timeline, os.Error) {
+	jsondata, err := tapi.get_statuses(tl_name, p...)
+	if err != nil {
+		return nil, err
+	}
+
+	tl := &Timeline{}
+
+	if jsonerr := json.Unmarshal(jsondata, &tl.Tweets); jsonerr != nil {
+		return nil, jsonerr
+	}
+
+	return tl, nil
+}
+
+func(tapi *TwitterAPI) get_statuses(id string, p ...*oauth.Pair) ([]byte, os.Error) {
 	var params oauth.Params
 	for _, x := range p {
 		if x != nil {
@@ -273,21 +338,10 @@ func(tapi *TwitterAPI) get_statuses(tl_name string, p ...*oauth.Pair) (*Timeline
 		}
 	}
 
-	resp, geterr := tapi.authcon.Get("https://api.twitter.com/1/statuses/" + tl_name + ".json", params, tapi.access_token)
+	resp, geterr := tapi.authcon.Get("https://api.twitter.com/1/statuses/" + id + ".json", params, tapi.access_token)
 	if geterr != nil {
 		return nil, geterr
 	}
 
-	bodydata, readerr := ioutil.ReadAll(resp.Body)
-	if readerr != nil {
-		return nil, readerr
-	}
-
-	tl := &Timeline{}
-
-	if jsonerr := json.Unmarshal(bodydata, &tl.Tweets); jsonerr != nil {
-		return nil, jsonerr
-	}
-
-	return tl, nil
+	return ioutil.ReadAll(resp.Body)
 }

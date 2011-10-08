@@ -6,6 +6,8 @@ import (
 	"json"
 	"io/ioutil"
 	"time"
+	"bytes"
+	stfl "github.com/akrennmair/go-stfl"
 	oauth "github.com/hokapoka/goauth"
 )
 
@@ -37,28 +39,71 @@ func main() {
 		}
 	}
 
-	last_id := int64(0)
+	newtweetchan := make(chan []Tweet, 1)
+	viewchan := make(chan []Tweet, 1)
 
-	for {
+	go func() {
+		last_id := int64(0)
 
-		home_tl, err := tapi.HomeTimeline(0, last_id)
+		for {
 
-		if err != nil {
-			fmt.Println(err.String())
-		} else {
+			home_tl, err := tapi.HomeTimeline(0, last_id)
 
-			for _, tweet := range home_tl.Tweets {
-				fmt.Printf("[id=%v] [%s] %s\n", *tweet.Id, *tweet.User.Screen_name, *tweet.Text)
+			if err != nil {
+				//fmt.Println(err.String())
+				//TODO: signal error
+			} else {
+				if len(home_tl.Tweets) > 0 {
+					newtweetchan <- home_tl.Tweets
+					if home_tl.Tweets[0].Id != nil {
+						last_id = *home_tl.Tweets[0].Id
+					}
+				}
 			}
 
-			if len(home_tl.Tweets) > 0 && home_tl.Tweets[0].Id != nil {
-				last_id = *home_tl.Tweets[0].Id
-				fmt.Printf("last_id = %v\n", last_id)
+			time.Sleep(20e9)
+		}
+	}()
+
+	go func() {
+		tweets := []Tweet{}
+
+		for {
+			select {
+			case newtweets := <-newtweetchan:
+				//fmt.Fprintf(os.Stderr, "received %d tweets in controller\n", len(newtweets))
+				tweets = append(newtweets, tweets...)
+				viewchan <- newtweets
 			}
 		}
 
-		time.Sleep(20e9)
+	}()
+
+	form := stfl.Create("<ui.stfl>")
+	form.Set("program", os.Args[0])
+
+
+	go func() {
+
+		for {
+			select {
+			case newtweets := <-viewchan:
+				//fmt.Fprintf(os.Stderr, "received %d tweets in view\n", len(newtweets))
+				str := formatTweets(newtweets)
+				//fmt.Fprintf(os.Stderr, "formatted new tweets: %s\n", str)
+				form.Modify("tweets", "insert_inner", str)
+				form.Run(-1)
+			}
+		}
+	}()
+
+	event := ""
+	for event != "q" {
+		event = form.Run(0)
 	}
+
+	stfl.Reset()
+
 
 //	foo, posterr := goauthcon.Post(
 //		"http://api.twitter.com/1/statuses/update.json",
@@ -119,4 +164,18 @@ func LoadAccessToken() (*oauth.AccessToken, os.Error) {
 	}
 
 	return at, nil
+}
+
+func formatTweets(tweets []Tweet) string {
+	buf := bytes.NewBufferString("{list")
+
+	for _, t := range tweets {
+		tweetline := fmt.Sprintf("[%s] %s", *t.User.Screen_name, *t.Text)
+		buf.WriteString("{listitem text:")
+		buf.WriteString(stfl.Quote(tweetline))
+		buf.WriteString("}")
+	}
+
+	buf.WriteString("}")
+	return string(buf.Bytes())
 }
