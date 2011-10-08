@@ -79,6 +79,7 @@ func main() {
 
 	}()
 
+	stfl.Init()
 	form := stfl.Create("<ui.stfl>")
 	form.Set("program", os.Args[0])
 
