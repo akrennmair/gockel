@@ -1,117 +1,42 @@
 package main
 
 import (
-	oauth "github.com/hokapoka/goauth"
 	"fmt"
-	"io/ioutil"
-	"json"
 )
 
-type Timeline struct {
-	Tweets []Tweet
-}
-
-type Tweet struct {
-	Favorited bool
-	In_reply_to_status_id *int64
-	Retweet_count interface{}
-	In_reply_to_screen_name *string
-	Place *PlaceDesc
-	Truncated bool
-	User *TwitterUser
-	Retweeted bool
-	In_reply_to_status_id_str *string
-	In_reply_to_user_id_str *string
-	In_reply_to_user_id *int64
-	Source *string
-	Id *int64
-	Id_str *string
-	//Coordinates *TODO
-	Text *string
-	Created_at *string
-}
-
-type TwitterUser struct {
-	Protected bool
-	Listed_count int
-	Name *string
-	Verified bool
-	Lang *string
-	Time_zone *string
-	Description *string
-	Location *string
-	Statuses_count int
-	Url *string
-	Screen_name *string
-	Follow_request_sent bool
-	Following bool
-	Friends_count *int64
-	Favourites_count *int64
-	Followers_count *int64
-	Id *int64
-	Id_str *string
-}
-
-type PlaceDesc struct {
-	Name *string
-	Full_name *string
-	Url *string
-	Country_code *string
-}
-
-var goauthcon *oauth.OAuthConsumer
 
 func main() {
-	goauthcon = &oauth.OAuthConsumer{
-		Service:"twitter",
-		RequestTokenURL:"http://twitter.com/oauth/request_token",
-		AccessTokenURL:"http://twitter.com/oauth/access_token",
-		AuthorizationURL:"http://twitter.com/oauth/authorize",
-		ConsumerKey:"sDggzGbHbyAfl5fJ87XOCA",
-		ConsumerSecret:"MOCQDL7ot7qIxMwYL5x1mMAqiYBYxNTxPWS6tc6hw",
-		CallBackURL:"oob",
-	}
 
-	s, rt, err := goauthcon.GetRequestAuthorizationURL()
+	tapi := NewTwitterAPI("sDggzGbHbyAfl5fJ87XOCA", "MOCQDL7ot7qIxMwYL5x1mMAqiYBYxNTxPWS6tc6hw")
+
+	auth_url, err := tapi.GetRequestAuthorizationURL()
 	if err != nil {
 		fmt.Println(err.String())
 		return
 	}
 
 	var pin string
-	fmt.Printf("Open %s\n", s)
+	fmt.Printf("Open %s\n", auth_url)
 	fmt.Printf("PIN Number: ")
 	fmt.Scanln(&pin)
 
-	at := goauthcon.GetAccessToken(rt.Token, pin)
+	tapi.SetPIN(pin)
 
-	fmt.Printf("at = %v\n", at)
+	home_tl, err := tapi.HomeTimeline()
 
-	foo, geterr := goauthcon.Get("https://api.twitter.com/1/statuses/home_timeline.json", oauth.Params{}, at )
-
-	if geterr != nil {
-		fmt.Println(geterr.String())
+	if err != nil {
+		fmt.Println(err.String())
+		return
 	}
 
-	body, _ := ioutil.ReadAll(foo.Body)
-
-	var home_tl Timeline
-
-	if jsonerr := json.Unmarshal(body, &home_tl.Tweets); jsonerr == nil {
-		for _, tweet := range home_tl.Tweets {
-			rt_count, okstr := tweet.Retweet_count.(string)
-			if !okstr {
-				rt_count_int, okint := tweet.Retweet_count.(int)
-				if !okint {
-					rt_count = "0"
-				} else {
-					rt_count = fmt.Sprintf("%d", rt_count_int)
-				}
+	for _, tweet := range home_tl.Tweets {
+		rt_count, okstr := tweet.Retweet_count.(string)
+		if !okstr {
+			if rt_count_int, okint := tweet.Retweet_count.(int64); okint {
+				rt_count = fmt.Sprintf("%d", rt_count_int)
 			}
-			fmt.Printf("[%s] %s (%s)\n", *tweet.User.Screen_name, *tweet.Text, rt_count)
 		}
-	} else {
-		fmt.Println(jsonerr.String())
+		fmt.Printf("[%s] %s (%s)\n", *tweet.User.Screen_name, *tweet.Text, rt_count)
 	}
 
 //	foo, posterr := goauthcon.Post(
