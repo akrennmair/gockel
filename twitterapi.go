@@ -5,6 +5,7 @@ import (
 	"json"
 	"os"
 	"io/ioutil"
+	"strconv"
 )
 
 type Timeline struct {
@@ -102,8 +103,16 @@ func(tapi *TwitterAPI) GetAccessToken() *oauth.AccessToken {
 	return tapi.access_token
 }
 
-func(tapi *TwitterAPI) HomeTimeline() (*Timeline, os.Error) {
-	resp, geterr := tapi.authcon.Get("https://api.twitter.com/1/statuses/home_timeline.json", oauth.Params{}, tapi.access_token)
+func(tapi *TwitterAPI) HomeTimeline(count uint, since_id int64) (*Timeline, os.Error) {
+	var params oauth.Params
+	if count != 0 {
+		params.Add(&oauth.Pair{ "count", strconv.Uitoa(count) })
+	}
+	if since_id != 0 {
+		params.Add(&oauth.Pair{ "since_id", strconv.Itoa64(since_id) })
+	}
+
+	resp, geterr := tapi.authcon.Get("https://api.twitter.com/1/statuses/home_timeline.json", params, tapi.access_token)
 	if geterr != nil {
 		return nil, geterr
 	}

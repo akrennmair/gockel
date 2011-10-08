@@ -5,6 +5,7 @@ import (
 	"os"
 	"json"
 	"io/ioutil"
+	"time"
 	oauth "github.com/hokapoka/goauth"
 )
 
@@ -36,21 +37,27 @@ func main() {
 		}
 	}
 
-	home_tl, err := tapi.HomeTimeline()
+	last_id := int64(0)
 
-	if err != nil {
-		fmt.Println(err.String())
-		return
-	}
+	for {
 
-	for _, tweet := range home_tl.Tweets {
-		rt_count, okstr := tweet.Retweet_count.(string)
-		if !okstr {
-			if rt_count_int, okint := tweet.Retweet_count.(int64); okint {
-				rt_count = fmt.Sprintf("%d", rt_count_int)
+		home_tl, err := tapi.HomeTimeline(0, last_id)
+
+		if err != nil {
+			fmt.Println(err.String())
+		} else {
+
+			for _, tweet := range home_tl.Tweets {
+				fmt.Printf("[id=%v] [%s] %s\n", *tweet.Id, *tweet.User.Screen_name, *tweet.Text)
+			}
+
+			if len(home_tl.Tweets) > 0 && home_tl.Tweets[0].Id != nil {
+				last_id = *home_tl.Tweets[0].Id
+				fmt.Printf("last_id = %v\n", last_id)
 			}
 		}
-		fmt.Printf("[%s] %s (%s)\n", *tweet.User.Screen_name, *tweet.Text, rt_count)
+
+		time.Sleep(20e9)
 	}
 
 //	foo, posterr := goauthcon.Post(
