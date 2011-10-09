@@ -36,8 +36,11 @@ func(m *Model) Run() {
 
 	for {
 		select {
-		case tweet := <-m.updatechan:
-			m.tapi.Update(tweet)
+		case tweetstr := <-m.updatechan:
+			if tweet, err := m.tapi.Update(tweetstr); err == nil {
+				last_id = *tweet.Id
+				m.newtweetchan <- []Tweet{ *tweet }
+			}
 		case <-ticker:
 			home_tl, err := m.tapi.HomeTimeline(50, last_id)
 
