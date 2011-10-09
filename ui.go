@@ -81,6 +81,7 @@ func(ui *UserInterface) HandleRawInput(input string) {
 	case "cancel-input":
 		ui.ResetLastLine()
 	}
+	ui.form.Run(-1)
 }
 
 func(ui *UserInterface) InputLoop() {
