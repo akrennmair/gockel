@@ -1,0 +1,23 @@
+README for gockel
+====================
+Andreas Krennmair <ak@synflood.at>
+
+Introduction
+------------
+Gockel is a Twitter client for text terminals, written in the Go programming language.
+Currently, gockel is at a very early stage of development. Its predecessor is
+baconbird: http://synflood.at/baconbird.html
+
+Downloading
+-----------
+
+You can download gockel here: https://github.com/akrennmair/gockel
+
+Contact
+-------
+Andreas Krennmair <ak@synflood.at>
+
+License
+-------
+Gockel is licensed under the MIT/X Consortium License. See the file LICENSE
+for further details.
