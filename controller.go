@@ -1,25 +1,25 @@
 package main
 
 type Controller struct {
-	tweets []Tweet
+	tweets       []Tweet
 	newtweetchan chan []Tweet
-	viewchan chan []Tweet
+	viewchan     chan []Tweet
 }
 
 func NewController(ntchan chan []Tweet) *Controller {
 	ctrl := &Controller{
-		tweets: []Tweet{},
+		tweets:       []Tweet{},
 		newtweetchan: ntchan,
-		viewchan: make(chan []Tweet, 1),
+		viewchan:     make(chan []Tweet, 1),
 	}
 	return ctrl
 }
 
-func(ctrl *Controller) GetViewChannel() chan []Tweet {
+func (ctrl *Controller) GetViewChannel() chan []Tweet {
 	return ctrl.viewchan
 }
 
-func(ctrl *Controller) Run() {
+func (ctrl *Controller) Run() {
 	for {
 		select {
 		case newtweets := <-ctrl.newtweetchan:

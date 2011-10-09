@@ -57,7 +57,7 @@ func SaveAccessToken(at *oauth.AccessToken) os.Error {
 		return marshalerr
 	}
 
-	f, ferr := os.OpenFile("access_token.json", os.O_WRONLY | os.O_CREATE, 0600)
+	f, ferr := os.OpenFile("access_token.json", os.O_WRONLY|os.O_CREATE, 0600)
 	if ferr != nil {
 		return ferr
 	}
@@ -84,7 +84,7 @@ func LoadAccessToken() (*oauth.AccessToken, os.Error) {
 	}
 
 	at := &oauth.AccessToken{}
-	
+
 	err := json.Unmarshal(data, at)
 	if err != nil {
 		return nil, err
