@@ -5,7 +5,7 @@ import (
 )
 
 type Model struct {
-	updatechan   chan string
+	updatechan   chan Tweet
 	newtweetchan chan []Tweet
 	tapi         *TwitterAPI
 	tweets       []Tweet
@@ -13,7 +13,7 @@ type Model struct {
 
 func NewModel(t *TwitterAPI) *Model {
 	model := &Model{
-		updatechan:   make(chan string, 1),
+		updatechan:   make(chan Tweet, 1),
 		newtweetchan: make(chan []Tweet, 1),
 		tapi:         t,
 	}
@@ -21,7 +21,7 @@ func NewModel(t *TwitterAPI) *Model {
 	return model
 }
 
-func (m *Model) GetUpdateChannel() chan string {
+func (m *Model) GetUpdateChannel() chan Tweet {
 	return m.updatechan
 }
 
@@ -37,11 +37,11 @@ func (m *Model) Run() {
 
 	for {
 		select {
-		case tweetstr := <-m.updatechan:
-			if tweet, err := m.tapi.Update(tweetstr); err == nil {
-				last_id = *tweet.Id
-				m.tweets = append([]Tweet{*tweet}, m.tweets...)
-				m.newtweetchan <- []Tweet{*tweet}
+		case tweet := <-m.updatechan:
+			if newtweet, err := m.tapi.Update(tweet); err == nil {
+				last_id = *newtweet.Id
+				m.tweets = append([]Tweet{*newtweet}, m.tweets...)
+				m.newtweetchan <- []Tweet{*newtweet}
 			}
 		case <-ticker:
 			home_tl, err := m.tapi.HomeTimeline(50, last_id)

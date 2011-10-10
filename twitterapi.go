@@ -315,15 +315,17 @@ func (tapi *TwitterAPI) RetweetedByIds(tweet_id int64, count uint) (*UserIdList,
 	return uidl, nil
 }
 
-func (tapi *TwitterAPI) Update(text string) (*Tweet, os.Error) {
-	resp, err := tapi.authcon.Post(
-		"https://api.twitter.com/1/statuses/update.json",
-		oauth.Params{
-			&oauth.Pair{
-				Key:   "status",
-				Value: text,
-			},
-		}, tapi.access_token)
+func (tapi *TwitterAPI) Update(tweet Tweet) (*Tweet, os.Error) {
+	params := oauth.Params{
+		&oauth.Pair{
+			Key:   "status",
+			Value: *tweet.Text,
+		},
+	}
+	if tweet.In_reply_to_status_id != nil && *tweet.In_reply_to_status_id != int64(0) {
+		params = append(params, &oauth.Pair{"in_reply_to", strconv.Itoa64(*tweet.In_reply_to_status_id)})
+	}
+	resp, err := tapi.authcon.Post("https://api.twitter.com/1/statuses/update.json", params, tapi.access_token)
 	if err != nil {
 		return nil, err
 	}
@@ -337,12 +339,12 @@ func (tapi *TwitterAPI) Update(text string) (*Tweet, os.Error) {
 		return nil, err
 	}
 
-	tweet := &Tweet{}
-	if jsonerr := json.Unmarshal(data, tweet); jsonerr != nil {
+	newtweet := &Tweet{}
+	if jsonerr := json.Unmarshal(data, newtweet); jsonerr != nil {
 		return nil, jsonerr
 	}
 
-	return tweet, nil
+	return newtweet, nil
 }
 
 func (tapi *TwitterAPI) get_timeline(tl_name string, p ...*oauth.Pair) (*Timeline, os.Error) {

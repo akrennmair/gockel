@@ -10,7 +10,7 @@ type UserInterface struct {
 	form       *stfl.Form
 	actionchan chan UserInterfaceAction
 	tweetchan  chan []Tweet
-	updatechan chan string
+	updatechan chan Tweet
 }
 
 type ActionId int
@@ -25,7 +25,7 @@ type UserInterfaceAction struct {
 	Args   []string
 }
 
-func NewUserInterface(tc chan []Tweet, uc chan string) *UserInterface {
+func NewUserInterface(tc chan []Tweet, uc chan Tweet) *UserInterface {
 	stfl.Init()
 	ui := &UserInterface{
 		form:       stfl.Create("<ui.stfl>"),
@@ -72,9 +72,10 @@ func (ui *UserInterface) HandleRawInput(input string) {
 	case "ENTER":
 		ui.SetInputField("Tweet: ", "", "end-input")
 	case "end-input":
-		tweet_text := ui.form.Get("inputfield")
-		if len(tweet_text) > 0 {
-			ui.updatechan <- tweet_text
+		tweet_text := new(string)
+		*tweet_text = ui.form.Get("inputfield")
+		if len(*tweet_text) > 0 {
+			ui.updatechan <- Tweet{Text: tweet_text}
 		}
 		ui.ResetLastLine()
 	case "cancel-input":
