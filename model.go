@@ -8,6 +8,7 @@ type Model struct {
 	updatechan   chan string
 	newtweetchan chan []Tweet
 	tapi         *TwitterAPI
+	tweets       []Tweet
 }
 
 func NewModel(t *TwitterAPI) *Model {
@@ -39,6 +40,7 @@ func (m *Model) Run() {
 		case tweetstr := <-m.updatechan:
 			if tweet, err := m.tapi.Update(tweetstr); err == nil {
 				last_id = *tweet.Id
+				m.tweets = append([]Tweet{*tweet}, m.tweets...)
 				m.newtweetchan <- []Tweet{*tweet}
 			}
 		case <-ticker:
@@ -48,6 +50,7 @@ func (m *Model) Run() {
 				//TODO: signal error
 			} else {
 				if len(home_tl.Tweets) > 0 {
+					m.tweets = append(home_tl.Tweets, m.tweets...)
 					m.newtweetchan <- home_tl.Tweets
 					if home_tl.Tweets[0].Id != nil {
 						last_id = *home_tl.Tweets[0].Id

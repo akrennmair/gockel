@@ -41,11 +41,7 @@ func main() {
 	newtweetchan := model.GetNewTweetChannel()
 	go model.Run()
 
-	ctrl := NewController(newtweetchan)
-	viewchan := ctrl.GetViewChannel()
-	go ctrl.Run()
-
-	ui := NewUserInterface(viewchan, updatechan)
+	ui := NewUserInterface(newtweetchan, updatechan)
 	go ui.Run()
 
 	ui.InputLoop()
