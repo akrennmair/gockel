@@ -7,10 +7,11 @@ import (
 )
 
 type UserInterface struct {
-	form       *stfl.Form
-	actionchan chan UserInterfaceAction
-	tweetchan  chan []Tweet
-	updatechan chan Tweet
+	form                  *stfl.Form
+	actionchan            chan UserInterfaceAction
+	tweetchan             chan []Tweet
+	updatechan            chan Tweet
+	in_reply_to_status_id int64
 }
 
 type ActionId int
@@ -28,10 +29,11 @@ type UserInterfaceAction struct {
 func NewUserInterface(tc chan []Tweet, uc chan Tweet) *UserInterface {
 	stfl.Init()
 	ui := &UserInterface{
-		form:       stfl.Create("<ui.stfl>"),
-		actionchan: make(chan UserInterfaceAction, 10),
-		tweetchan:  tc,
-		updatechan: uc,
+		form:                  stfl.Create("<ui.stfl>"),
+		actionchan:            make(chan UserInterfaceAction, 10),
+		tweetchan:             tc,
+		updatechan:            uc,
+		in_reply_to_status_id: 0,
 	}
 	return ui
 }
@@ -75,7 +77,13 @@ func (ui *UserInterface) HandleRawInput(input string) {
 		tweet_text := new(string)
 		*tweet_text = ui.form.Get("inputfield")
 		if len(*tweet_text) > 0 {
-			ui.updatechan <- Tweet{Text: tweet_text}
+			t := Tweet{Text: tweet_text}
+			if ui.in_reply_to_status_id != 0 {
+				t.In_reply_to_status_id = new(int64)
+				*t.In_reply_to_status_id = ui.in_reply_to_status_id
+				ui.in_reply_to_status_id = int64(0)
+			}
+			ui.updatechan <- t
 		}
 		ui.ResetLastLine()
 	case "cancel-input":

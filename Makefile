@@ -7,4 +7,10 @@ GOFILES=gockel.go \
 		model.go \
 		ui.go
 
+
 include $(GOROOT)/src/Make.cmd
+
+gofmt:
+	for f in $(GOFMT) ; do gofmt $$f > $$f.new ; mv $$f.new $$f ; done
+
+.PHONY: gofmt
