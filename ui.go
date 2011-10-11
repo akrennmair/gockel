@@ -40,6 +40,7 @@ func NewUserInterface(cc chan TwitterCommand, tc chan []*Tweet, lc chan TweetReq
 		in_reply_to_status_id: 0,
 		lookupchan:            lc,
 	}
+	ui.form.Set("program", "gockel 0.0")
 	return ui
 }
 
