@@ -49,18 +49,6 @@ func NewModel(t *TwitterAPI, cc chan TwitterCommand, ntc chan []*Tweet, lc chan 
 	return model
 }
 
-func (m *Model) GetCommandChannel() chan TwitterCommand {
-	return m.cmdchan
-}
-
-func (m *Model) GetNewTweetChannel() chan []*Tweet {
-	return m.newtweetchan
-}
-
-func (m *Model) GetLookupChannel() chan TweetRequest {
-	return m.lookupchan
-}
-
 func (m *Model) Run() {
 	ticker := make(chan int, 1)
 	go Ticker(ticker, 20e9)

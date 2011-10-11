@@ -23,6 +23,7 @@ const (
 	RESET_LAST_LINE ActionId = iota
 	RAW_INPUT
 	UPDATE_RATELIMIT
+	KEY_PRESS
 )
 
 type UserInterfaceAction struct {
@@ -75,11 +76,42 @@ func (ui *UserInterface) HandleAction(action UserInterfaceAction) {
 		newtext := fmt.Sprintf("Next reset: %d min %d/%d", reset/60, rem, limit)
 		ui.form.Set("rateinfo", newtext)
 		ui.form.Run(-1)
+	case KEY_PRESS:
+		ui.UpdateInfoLine()
+		ui.form.Run(-1)
 	}
 }
 
 func (ui *UserInterface) ResetLastLine() {
 	ui.form.Modify("lastline", "replace", "{hbox[lastline] .expand:0 {label text[msg]:\"\" .expand:h}}")
+}
+
+func (ui *UserInterface) UpdateInfoLine() {
+	status_id, err := strconv.Atoi64(ui.form.Get("status_id"))
+	if err != nil {
+		return
+	}
+
+	tweet := ui.LookupTweet(status_id)
+	if tweet != nil {
+		var screen_name, real_name, location, posttime string
+		if tweet.User != nil {
+			if tweet.User.Screen_name != nil {
+				screen_name = *tweet.User.Screen_name
+			}
+			if tweet.User.Name != nil {
+				real_name = *tweet.User.Name
+			}
+			if tweet.User.Location != nil && *tweet.User.Location != "" {
+				location = " - "+*tweet.User.Location
+			}
+		}
+		if tweet.Created_at != nil {
+			posttime = *tweet.Created_at
+		}
+		infoline := fmt.Sprintf(">> @%s (%s)%s | posted %s | https://twitter.com/%s/statuses/%d", screen_name, real_name, location, posttime, screen_name, status_id)
+		ui.form.Set("infoline", infoline)
+	}
 }
 
 func (ui *UserInterface) HandleRawInput(input string) {
@@ -144,6 +176,8 @@ func (ui *UserInterface) InputLoop() {
 			} else {
 				ui.actionchan <- UserInterfaceAction{RAW_INPUT, []string{event}}
 			}
+		} else {
+			ui.actionchan <- UserInterfaceAction{Action:KEY_PRESS}
 		}
 	}
 	stfl.Reset()
