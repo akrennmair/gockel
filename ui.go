@@ -3,14 +3,16 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"strconv"
 	stfl "github.com/akrennmair/go-stfl"
 )
 
 type UserInterface struct {
 	form                  *stfl.Form
 	actionchan            chan UserInterfaceAction
-	tweetchan             chan []Tweet
+	tweetchan             chan []*Tweet
 	updatechan            chan Tweet
+	lookupchan            chan TweetRequest
 	in_reply_to_status_id int64
 }
 
@@ -26,7 +28,7 @@ type UserInterfaceAction struct {
 	Args   []string
 }
 
-func NewUserInterface(tc chan []Tweet, uc chan Tweet) *UserInterface {
+func NewUserInterface(tc chan []*Tweet, uc chan Tweet, lc chan TweetRequest) *UserInterface {
 	stfl.Init()
 	ui := &UserInterface{
 		form:                  stfl.Create("<ui.stfl>"),
@@ -34,6 +36,7 @@ func NewUserInterface(tc chan []Tweet, uc chan Tweet) *UserInterface {
 		tweetchan:             tc,
 		updatechan:            uc,
 		in_reply_to_status_id: 0,
+		lookupchan:            lc,
 	}
 	return ui
 }
@@ -73,6 +76,14 @@ func (ui *UserInterface) HandleRawInput(input string) {
 	switch input {
 	case "ENTER":
 		ui.SetInputField("Tweet: ", "", "end-input")
+	case "r":
+		ui.in_reply_to_status_id, _ = strconv.Atoi64(ui.form.Get("status_id"))
+		tweet := ui.LookupTweet(ui.in_reply_to_status_id)
+		if tweet != nil {
+			ui.SetInputField("Reply: ", "@"+*tweet.User.Screen_name+" ","end-input")
+		} else {
+			//TODO: show error
+		}
 	case "end-input":
 		tweet_text := new(string)
 		*tweet_text = ui.form.Get("inputfield")
@@ -92,11 +103,20 @@ func (ui *UserInterface) HandleRawInput(input string) {
 	ui.form.Run(-1)
 }
 
+func (ui *UserInterface) LookupTweet(status_id int64) *Tweet {
+	reply := make(chan *Tweet)
+	req := TweetRequest{Status_id: status_id, Reply: reply}
+	ui.lookupchan <- req
+	return <-reply
+}
+
 func (ui *UserInterface) InputLoop() {
 	event := ""
 	for event != "q" {
 		event = ui.form.Run(0)
-		ui.actionchan <- UserInterfaceAction{RAW_INPUT, []string{event}}
+		if event != "" {
+			ui.actionchan <- UserInterfaceAction{RAW_INPUT, []string{event}}
+		}
 	}
 	stfl.Reset()
 }
@@ -108,14 +128,12 @@ func (ui *UserInterface) SetInputField(prompt, deftext, endevent string) {
 	ui.form.SetFocus("tweetinput")
 }
 
-func formatTweets(tweets []Tweet) string {
+func formatTweets(tweets []*Tweet) string {
 	buf := bytes.NewBufferString("{list")
 
 	for _, t := range tweets {
 		tweetline := fmt.Sprintf("[%16s] %s", "@"+*t.User.Screen_name, *t.Text)
-		buf.WriteString("{listitem text:")
-		buf.WriteString(stfl.Quote(tweetline))
-		buf.WriteString("}")
+		buf.WriteString(fmt.Sprintf("{listitem[%v] text:%v}", *t.Id, stfl.Quote(tweetline)))
 	}
 
 	buf.WriteString("}")

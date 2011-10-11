@@ -9,7 +9,7 @@ import (
 )
 
 type Timeline struct {
-	Tweets []Tweet
+	Tweets []*Tweet
 }
 
 type UserList struct {
@@ -323,7 +323,7 @@ func (tapi *TwitterAPI) Update(tweet Tweet) (*Tweet, os.Error) {
 		},
 	}
 	if tweet.In_reply_to_status_id != nil && *tweet.In_reply_to_status_id != int64(0) {
-		params = append(params, &oauth.Pair{"in_reply_to", strconv.Itoa64(*tweet.In_reply_to_status_id)})
+		params = append(params, &oauth.Pair{"in_reply_to_status_id", strconv.Itoa64(*tweet.In_reply_to_status_id)})
 	}
 	resp, err := tapi.authcon.Post("https://api.twitter.com/1/statuses/update.json", params, tapi.access_token)
 	if err != nil {

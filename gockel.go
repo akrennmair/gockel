@@ -37,11 +37,12 @@ func main() {
 	}
 
 	model := NewModel(tapi)
-	updatechan := model.GetUpdateChannel()
 	newtweetchan := model.GetNewTweetChannel()
+	updatechan := model.GetUpdateChannel()
+	lookupchan := model.GetLookupChannel()
 	go model.Run()
 
-	ui := NewUserInterface(newtweetchan, updatechan)
+	ui := NewUserInterface(newtweetchan, updatechan, lookupchan)
 	go ui.Run()
 
 	ui.InputLoop()

@@ -11,6 +11,7 @@ vbox[root]
       style_focus[listfocus]:fg=yellow,bg=blue,attr=bold
       .expand:vh
       pos[tweetpos]:0
+      pos_name[status_id]:
   vbox
     .expand:0
     .display:1
