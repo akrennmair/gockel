@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"os"
 	"html"
+	"utf8"
 	stfl "github.com/akrennmair/go-stfl"
 )
 
@@ -185,7 +186,7 @@ func (ui *UserInterface) InputLoop() {
 }
 
 func (ui *UserInterface) SetInputField(prompt, deftext, endevent string) {
-	last_line_text := "{hbox[lastline] .expand:0 {label .expand:0 text[prompt]:" + stfl.Quote(prompt) + "}{input[tweetinput] on_ESC:cancel-input on_ENTER:" + endevent + " modal:1 .expand:h text[inputfield]:" + stfl.Quote(deftext) + "}}"
+	last_line_text := "{hbox[lastline] .expand:0 {label .expand:0 text[prompt]:" + stfl.Quote(prompt) + "}{input[tweetinput] on_ESC:cancel-input on_ENTER:" + endevent + " modal:1 .expand:h text[inputfield]:" + stfl.Quote(deftext) + " pos[inputpos]:" + strconv.Itoa(utf8.RuneCountInString(deftext)) + "}}"
 
 	ui.form.Modify("lastline", "replace", last_line_text)
 	ui.form.SetFocus("tweetinput")

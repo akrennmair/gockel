@@ -2,8 +2,6 @@ package main
 
 import (
 	"time"
-	"fmt"
-	"os"
 	"strconv"
 )
 
