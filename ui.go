@@ -138,7 +138,11 @@ func (ui *UserInterface) InputLoop() {
 	for event != "q" {
 		event = ui.form.Run(0)
 		if event != "" {
-			ui.actionchan <- UserInterfaceAction{RAW_INPUT, []string{event}}
+			if event == "^L" {
+				stfl.Reset()
+			} else {
+				ui.actionchan <- UserInterfaceAction{RAW_INPUT, []string{event}}
+			}
 		}
 	}
 	stfl.Reset()
