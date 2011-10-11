@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"os"
+	"html"
 	stfl "github.com/akrennmair/go-stfl"
 )
 
@@ -195,7 +196,7 @@ func formatTweets(tweets []*Tweet) string {
 
 	for _, t := range tweets {
 		tweetline := fmt.Sprintf("[%16s] %s", "@"+*t.User.Screen_name, *t.Text)
-		buf.WriteString(fmt.Sprintf("{listitem[%v] text:%v}", *t.Id, stfl.Quote(tweetline)))
+		buf.WriteString(fmt.Sprintf("{listitem[%v] text:%v}", *t.Id, stfl.Quote(html.UnescapeString(tweetline))))
 	}
 
 	buf.WriteString("}")
