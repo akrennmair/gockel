@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"strconv"
+	"os"
 	stfl "github.com/akrennmair/go-stfl"
 )
 
@@ -11,7 +12,7 @@ type UserInterface struct {
 	form                  *stfl.Form
 	actionchan            chan UserInterfaceAction
 	tweetchan             chan []*Tweet
-	updatechan            chan Tweet
+	cmdchan               chan TwitterCommand
 	lookupchan            chan TweetRequest
 	in_reply_to_status_id int64
 }
@@ -28,13 +29,13 @@ type UserInterfaceAction struct {
 	Args   []string
 }
 
-func NewUserInterface(tc chan []*Tweet, uc chan Tweet, lc chan TweetRequest) *UserInterface {
+func NewUserInterface(tc chan []*Tweet, cc chan TwitterCommand, lc chan TweetRequest) *UserInterface {
 	stfl.Init()
 	ui := &UserInterface{
 		form:                  stfl.Create("<ui.stfl>"),
 		actionchan:            make(chan UserInterfaceAction, 10),
 		tweetchan:             tc,
-		updatechan:            uc,
+		cmdchan:               cc,
 		in_reply_to_status_id: 0,
 		lookupchan:            lc,
 	}
@@ -77,13 +78,27 @@ func (ui *UserInterface) HandleRawInput(input string) {
 	case "ENTER":
 		ui.SetInputField("Tweet: ", "", "end-input")
 	case "r":
-		ui.in_reply_to_status_id, _ = strconv.Atoi64(ui.form.Get("status_id"))
+		var err os.Error
+		ui.in_reply_to_status_id, err = strconv.Atoi64(ui.form.Get("status_id"))
+		if err != nil {
+			// TODO: show error
+			break
+		}
 		tweet := ui.LookupTweet(ui.in_reply_to_status_id)
 		if tweet != nil {
 			ui.SetInputField("Reply: ", "@"+*tweet.User.Screen_name+" ","end-input")
 		} else {
 			//TODO: show error
 		}
+	case "^R":
+		status_id, err := strconv.Atoi64(ui.form.Get("status_id"))
+		if err != nil {
+			// TODO: show error
+			break
+		}
+		status_id_ptr := new(int64)
+		*status_id_ptr = status_id
+		ui.cmdchan <- TwitterCommand{Cmd: RETWEET, Data: Tweet{Id: status_id_ptr}}
 	case "end-input":
 		tweet_text := new(string)
 		*tweet_text = ui.form.Get("inputfield")
@@ -94,7 +109,7 @@ func (ui *UserInterface) HandleRawInput(input string) {
 				*t.In_reply_to_status_id = ui.in_reply_to_status_id
 				ui.in_reply_to_status_id = int64(0)
 			}
-			ui.updatechan <- t
+			ui.cmdchan <- TwitterCommand{Cmd: UPDATE, Data: t}
 		}
 		ui.ResetLastLine()
 	case "cancel-input":

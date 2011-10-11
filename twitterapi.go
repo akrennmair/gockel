@@ -6,6 +6,7 @@ import (
 	"os"
 	"io/ioutil"
 	"strconv"
+	"fmt"
 )
 
 type Timeline struct {
@@ -338,6 +339,30 @@ func (tapi *TwitterAPI) Update(tweet Tweet) (*Tweet, os.Error) {
 	if err != nil {
 		return nil, err
 	}
+
+	newtweet := &Tweet{}
+	if jsonerr := json.Unmarshal(data, newtweet); jsonerr != nil {
+		return nil, jsonerr
+	}
+
+	return newtweet, nil
+}
+
+func (tapi *TwitterAPI) Retweet(tweet Tweet) (*Tweet, os.Error) {
+	resp, err := tapi.authcon.Post(fmt.Sprintf("https://api.twitter.com/1/statuses/retweet/%d.json", *tweet.Id), oauth.Params{}, tapi.access_token)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode == 403 {
+		return nil, os.NewError(resp.Status)
+	}
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Fprintf(os.Stderr, "data = %s\n", string(data))
 
 	newtweet := &Tweet{}
 	if jsonerr := json.Unmarshal(data, newtweet); jsonerr != nil {
