@@ -4,6 +4,7 @@ import (
 	"time"
 	"fmt"
 	"os"
+	"strconv"
 )
 
 type Model struct {
@@ -13,6 +14,7 @@ type Model struct {
 	tweets       []*Tweet
 	tweet_map    map[int64]*Tweet
 	lookupchan   chan TweetRequest
+	uiactionchan chan UserInterfaceAction
 	last_id      int64
 }
 
@@ -34,13 +36,14 @@ type TwitterCommand struct {
 	Data Tweet
 }
 
-func NewModel(t *TwitterAPI) *Model {
+func NewModel(t *TwitterAPI, cc chan TwitterCommand, ntc chan []*Tweet, lc chan TweetRequest, uac chan UserInterfaceAction) *Model {
 	model := &Model{
-		cmdchan:      make(chan TwitterCommand, 1),
-		newtweetchan: make(chan []*Tweet, 1),
+		cmdchan:      cc,
+		newtweetchan: ntc,
 		tapi:         t,
-		lookupchan:   make(chan TweetRequest, 1),
+		lookupchan:   lc,
 		tweet_map:    map[int64]*Tweet{},
+		uiactionchan: uac,
 	}
 
 	return model
@@ -78,6 +81,7 @@ func (m *Model) Run() {
 			if err != nil {
 				//TODO: signal error
 			} else {
+				m.UpdateRateLimit()
 				if len(home_tl.Tweets) > 0 {
 					for _, t := range home_tl.Tweets {
 						m.tweet_map[*t.Id] = t
@@ -90,8 +94,10 @@ func (m *Model) Run() {
 				}
 			}
 		}
+
 	}
 }
+
 
 func (m *Model) HandleCommand(cmd TwitterCommand) {
 	switch cmd.Cmd {
@@ -102,6 +108,7 @@ func (m *Model) HandleCommand(cmd TwitterCommand) {
 			m.tweets = append([]*Tweet{newtweet}, m.tweets...)
 			m.newtweetchan <- []*Tweet{newtweet}
 		}
+		m.UpdateRateLimit()
 	case RETWEET:
 		if newtweet, err := m.tapi.Retweet(cmd.Data); err == nil {
 			fmt.Fprintf(os.Stderr, "%v\n", *newtweet)
@@ -110,8 +117,14 @@ func (m *Model) HandleCommand(cmd TwitterCommand) {
 			m.tweets = append([]*Tweet{newtweet}, m.tweets...)
 			m.newtweetchan <- []*Tweet{newtweet}
 		}
+		m.UpdateRateLimit()
 		// TODO: add more commands here
 	}
+}
+
+func (m *Model) UpdateRateLimit() {
+	rem, limit, reset := m.tapi.GetRateLimit()
+	m.uiactionchan <- UserInterfaceAction{Action: UPDATE_RATELIMIT, Args: []string{ strconv.Uitoa(rem), strconv.Uitoa(limit), strconv.Itoa64(reset) }}
 }
 
 func Ticker(tickchan chan int, ns int64) {

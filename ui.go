@@ -22,6 +22,7 @@ type ActionId int
 const (
 	RESET_LAST_LINE ActionId = iota
 	RAW_INPUT
+	UPDATE_RATELIMIT
 )
 
 type UserInterfaceAction struct {
@@ -29,11 +30,11 @@ type UserInterfaceAction struct {
 	Args   []string
 }
 
-func NewUserInterface(tc chan []*Tweet, cc chan TwitterCommand, lc chan TweetRequest) *UserInterface {
+func NewUserInterface(cc chan TwitterCommand, tc chan []*Tweet, lc chan TweetRequest, uac chan UserInterfaceAction) *UserInterface {
 	stfl.Init()
 	ui := &UserInterface{
 		form:                  stfl.Create("<ui.stfl>"),
-		actionchan:            make(chan UserInterfaceAction, 10),
+		actionchan:            uac,
 		tweetchan:             tc,
 		cmdchan:               cc,
 		in_reply_to_status_id: 0,
@@ -66,6 +67,13 @@ func (ui *UserInterface) HandleAction(action UserInterfaceAction) {
 	case RAW_INPUT:
 		input := action.Args[0]
 		ui.HandleRawInput(input)
+	case UPDATE_RATELIMIT:
+		rem, _ := strconv.Atoui(action.Args[0])
+		limit, _ := strconv.Atoui(action.Args[1])
+		reset, _ := strconv.Atoi64(action.Args[2])
+		newtext := fmt.Sprintf("Next reset: %d min %d/%d", reset/60, rem, limit)
+		ui.form.Set("rateinfo", newtext)
+		ui.form.Run(-1)
 	}
 }
 

@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"strconv"
 	"fmt"
+	"http"
+	"strings"
 )
 
 type Timeline struct {
@@ -74,9 +76,12 @@ const access_token_url = "http://twitter.com/oauth/access_token"
 const authorization_url = "http://twitter.com/oauth/authorize"
 
 type TwitterAPI struct {
-	authcon       *oauth.OAuthConsumer
-	access_token  *oauth.AccessToken
-	request_token *oauth.RequestToken
+	authcon         *oauth.OAuthConsumer
+	access_token    *oauth.AccessToken
+	request_token   *oauth.RequestToken
+	ratelimit_rem   uint
+	ratelimit_limit uint
+	ratelimit_reset int64
 }
 
 func NewTwitterAPI(consumer_key, consumer_secret string) *TwitterAPI {
@@ -98,6 +103,11 @@ func (tapi *TwitterAPI) GetRequestAuthorizationURL() (string, os.Error) {
 	s, rt, err := tapi.authcon.GetRequestAuthorizationURL()
 	tapi.request_token = rt
 	return s, err
+}
+
+func(tapi *TwitterAPI) GetRateLimit() (remaining uint, limit uint, reset int64) {
+	curtime, _, _ := os.Time()
+	return tapi.ratelimit_rem, tapi.ratelimit_limit, tapi.ratelimit_reset - curtime
 }
 
 func (tapi *TwitterAPI) SetPIN(pin string) {
@@ -330,6 +340,9 @@ func (tapi *TwitterAPI) Update(tweet Tweet) (*Tweet, os.Error) {
 	if err != nil {
 		return nil, err
 	}
+
+	tapi.UpdateRatelimit(resp.Header)
+
 	if resp.StatusCode == 403 {
 		return nil, os.NewError(resp.Status)
 	}
@@ -353,6 +366,9 @@ func (tapi *TwitterAPI) Retweet(tweet Tweet) (*Tweet, os.Error) {
 	if err != nil {
 		return nil, err
 	}
+
+	tapi.UpdateRatelimit(resp.Header)
+
 	if resp.StatusCode == 403 {
 		return nil, os.NewError(resp.Status)
 	}
@@ -400,5 +416,26 @@ func (tapi *TwitterAPI) get_statuses(id string, p ...*oauth.Pair) ([]byte, os.Er
 		return nil, geterr
 	}
 
+	tapi.UpdateRatelimit(resp.Header)
+
 	return ioutil.ReadAll(resp.Body)
+}
+
+func (tapi *TwitterAPI) UpdateRatelimit(hdrs http.Header) {
+	for k, v := range hdrs {
+		switch strings.ToLower(k) {
+		case "x-ratelimit-limit":
+			if limit, err := strconv.Atoui(v[0]); err == nil {
+				tapi.ratelimit_limit = limit
+			}
+		case "x-ratelimit-remaining":
+			if rem, err := strconv.Atoui(v[0]); err == nil {
+				tapi.ratelimit_rem = rem
+			}
+		case "x-ratelimit-reset":
+			if reset, err := strconv.Atoi64(v[0]); err == nil {
+				tapi.ratelimit_reset = reset
+			}
+		}
+	}
 }

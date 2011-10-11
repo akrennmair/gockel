@@ -36,13 +36,15 @@ func main() {
 		}
 	}
 
-	model := NewModel(tapi)
-	newtweetchan := model.GetNewTweetChannel()
-	cmdchan := model.GetCommandChannel()
-	lookupchan := model.GetLookupChannel()
+	cmdchan := make(chan TwitterCommand, 1)
+	newtweetchan := make(chan []*Tweet, 1)
+	lookupchan := make(chan TweetRequest, 1)
+	uiactionchan := make(chan UserInterfaceAction, 10)
+
+	model := NewModel(tapi, cmdchan, newtweetchan, lookupchan, uiactionchan)
 	go model.Run()
 
-	ui := NewUserInterface(newtweetchan, cmdchan, lookupchan)
+	ui := NewUserInterface(cmdchan, newtweetchan, lookupchan, uiactionchan)
 	go ui.Run()
 
 	ui.InputLoop()
