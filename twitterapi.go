@@ -378,8 +378,6 @@ func (tapi *TwitterAPI) Retweet(tweet Tweet) (*Tweet, os.Error) {
 		return nil, err
 	}
 
-	fmt.Fprintf(os.Stderr, "data = %s\n", string(data))
-
 	newtweet := &Tweet{}
 	if jsonerr := json.Unmarshal(data, newtweet); jsonerr != nil {
 		return nil, jsonerr

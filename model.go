@@ -100,7 +100,6 @@ func (m *Model) HandleCommand(cmd TwitterCommand) {
 		m.UpdateRateLimit()
 	case RETWEET:
 		if newtweet, err := m.tapi.Retweet(cmd.Data); err == nil {
-			fmt.Fprintf(os.Stderr, "%v\n", *newtweet)
 			m.tweet_map[*newtweet.Id] = newtweet
 			//m.last_id = *newtweet.Id // how does this react?
 			m.tweets = append([]*Tweet{newtweet}, m.tweets...)
