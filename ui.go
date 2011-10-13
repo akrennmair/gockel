@@ -80,12 +80,28 @@ func (ui *UserInterface) HandleAction(action UserInterfaceAction) {
 		ui.form.Run(-1)
 	case KEY_PRESS:
 		ui.UpdateInfoLine()
+		ui.UpdateRemaining()
 		ui.form.Run(-1)
 	}
 }
 
 func (ui *UserInterface) ResetLastLine() {
 	ui.form.Modify("lastline", "replace", "{hbox[lastline] .expand:0 {label text[msg]:\"\" .expand:h}}")
+}
+
+func(ui *UserInterface) UpdateRemaining() {
+	if ui.form.GetFocus() == "tweetinput" {
+		text := ui.form.Get("inputfield")
+		rem_len := 140 - utf8.RuneCountInString(text)
+		ui.form.Set("remaining", fmt.Sprintf("%4d ", rem_len))
+		if rem_len > 15 {
+			ui.form.Set("remaining_style", "fg=white,attr=bold")
+		} else if rem_len >= 0 {
+			ui.form.Set("remaining_style", "fg=yellow,attr=bold")
+		} else if rem_len < 0 {
+			ui.form.Set("remaining_style", "fg=white,bg=red,attr=bold")
+		}
+	}
 }
 
 func (ui *UserInterface) UpdateInfoLine() {
@@ -186,10 +202,11 @@ func (ui *UserInterface) InputLoop() {
 }
 
 func (ui *UserInterface) SetInputField(prompt, deftext, endevent string) {
-	last_line_text := "{hbox[lastline] .expand:0 {label .expand:0 text[prompt]:" + stfl.Quote(prompt) + "}{input[tweetinput] on_ESC:cancel-input on_ENTER:" + endevent + " modal:1 .expand:h text[inputfield]:" + stfl.Quote(deftext) + " pos[inputpos]:" + strconv.Itoa(utf8.RuneCountInString(deftext)) + "}}"
+	last_line_text := "{hbox[lastline] .expand:0 {label .tie:r .expand:0 text[remaining]:\"\" style_normal[remaining_style]:fg=white}{label .expand:0 text:\"| \"}{label .expand:0 text[prompt]:" + stfl.Quote(prompt) + "}{!input[tweetinput] on_ESC:cancel-input on_ENTER:" + endevent + " modal:1 .expand:h text[inputfield]:" + stfl.Quote(deftext) + " pos[inputpos]:" + strconv.Itoa(utf8.RuneCountInString(deftext)) + "}}"
 
 	ui.form.Modify("lastline", "replace", last_line_text)
-	ui.form.SetFocus("tweetinput")
+	//ui.form.SetFocus("tweetinput")
+	ui.UpdateRemaining()
 }
 
 func formatTweets(tweets []*Tweet) string {
