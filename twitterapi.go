@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"http"
 	"strings"
+	"time"
 )
 
 type Timeline struct {
@@ -450,3 +451,32 @@ func (tapi *TwitterAPI) UpdateRatelimit(hdrs http.Header) {
 		}
 	}
 }
+
+func (t *Tweet) RelativeCreatedAt() string {
+	if t.Created_at == nil {
+		return ""
+	}
+
+	tt, err := time.Parse(time.RubyDate, *t.Created_at)
+	if err != nil {
+		return *t.Created_at
+	}
+
+	delta := time.LocalTime().Seconds() - tt.Seconds()
+	switch {
+	case delta < 60:
+		return "less than a minute ago"
+	case delta < 120:
+		return "about a minute ago"
+	case delta < 45 * 60:
+		return fmt.Sprintf("about %d minutes ago", delta/60)
+	case delta < 120 * 60:
+		return "about an hour ago"
+	case delta < 24 * 60 * 60:
+		return fmt.Sprintf("about %d hours ago", delta/3600)
+	case delta < 48 * 60 * 60:
+		return "1 day ago"
+	}
+	return fmt.Sprintf("%d days ago", delta/(3600 * 24))
+}
+

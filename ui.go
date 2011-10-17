@@ -127,7 +127,7 @@ func (ui *UserInterface) UpdateInfoLine() {
 			}
 		}
 		if tweet.Created_at != nil {
-			posttime = *tweet.Created_at
+			posttime = tweet.RelativeCreatedAt()
 		}
 		infoline := fmt.Sprintf(">> @%s (%s)%s | posted %s | https://twitter.com/%s/statuses/%d", screen_name, real_name, location, posttime, screen_name, status_id)
 		ui.form.Set("infoline", infoline)
