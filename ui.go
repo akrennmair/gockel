@@ -57,6 +57,8 @@ func (ui *UserInterface) Run() {
 		case newtweets := <-ui.tweetchan:
 			str := formatTweets(newtweets)
 			ui.form.Modify("tweets", "insert_inner", str)
+			ui.IncrementPosition(len(newtweets))
+			ui.UpdateInfoLine()
 			ui.form.Run(-1)
 		case action := <-ui.actionchan:
 			ui.HandleAction(action)
@@ -228,4 +230,12 @@ func formatTweets(tweets []*Tweet) string {
 
 	buf.WriteString("}")
 	return string(buf.Bytes())
+}
+
+func (ui *UserInterface) IncrementPosition(size int) {
+	oldpos, err := strconv.Atoi(ui.form.Get("tweetpos"))
+	if err != nil {
+		return
+	}
+	ui.form.Set("tweetpos", fmt.Sprintf("%d", oldpos + size))
 }
