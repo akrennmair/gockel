@@ -1,0 +1,7 @@
+TODO list for gockel
+====================
+
+- implement highlighting by regular expression
+- show more (and better) error messages
+- write more tests
+- implement user stream API support
