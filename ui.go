@@ -158,6 +158,15 @@ func (ui *UserInterface) HandleRawInput(input string) {
 		status_id_ptr := new(int64)
 		*status_id_ptr = status_id
 		ui.cmdchan <- TwitterCommand{Cmd: RETWEET, Data: Tweet{Id: status_id_ptr}}
+	case "^F":
+		status_id, err := strconv.Atoi64(ui.form.Get("status_id"))
+		if err != nil {
+			// TODO: show error
+			break
+		}
+		status_id_ptr := new(int64)
+		*status_id_ptr = status_id
+		ui.cmdchan <- TwitterCommand{Cmd: FAVORITE, Data: Tweet{Id: status_id_ptr}}
 	case "end-input":
 		tweet_text := new(string)
 		*tweet_text = ui.form.Get("inputfield")

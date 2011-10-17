@@ -27,6 +27,7 @@ const (
 	UPDATE CmdId = iota
 	RETWEET
 	DELETE
+	FAVORITE
 )
 
 type TwitterCommand struct {
@@ -105,6 +106,11 @@ func (m *Model) HandleCommand(cmd TwitterCommand) {
 		}
 		m.UpdateRateLimit()
 		// TODO: add more commands here
+	case FAVORITE:
+		if err := m.tapi.Favorite(cmd.Data); err != nil {
+			// TODO: show error
+		}
+		m.UpdateRateLimit()
 	}
 }
 

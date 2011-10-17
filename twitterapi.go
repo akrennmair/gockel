@@ -386,6 +386,19 @@ func (tapi *TwitterAPI) Retweet(tweet Tweet) (*Tweet, os.Error) {
 	return newtweet, nil
 }
 
+func(tapi *TwitterAPI) Favorite(tweet Tweet) os.Error {
+	resp, err := tapi.authcon.Post(fmt.Sprintf("https://api.twitter.com/1/favorites/create/%d.json", *tweet.Id), oauth.Params{}, tapi.access_token)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != 200 {
+		return os.NewError(resp.Status)
+	}
+
+	return nil
+}
+
 func (tapi *TwitterAPI) get_timeline(tl_name string, p ...*oauth.Pair) (*Timeline, os.Error) {
 	jsondata, err := tapi.get_statuses(tl_name, p...)
 	if err != nil {
