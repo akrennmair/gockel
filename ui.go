@@ -169,6 +169,12 @@ func (ui *UserInterface) HandleRawInput(input string) {
 		status_id_ptr := new(int64)
 		*status_id_ptr = status_id
 		ui.cmdchan <- TwitterCommand{Cmd: FAVORITE, Data: Tweet{Id: status_id_ptr}}
+	case "^O":
+		if ui.form.GetFocus() == "tweetinput" {
+			text := ui.form.Get("inputfield")
+			text = FindURLs(text, ShortenURL)
+			ui.form.Set("inputfield", text)
+		}
 	case "end-input":
 		tweet_text := new(string)
 		*tweet_text = ui.form.Get("inputfield")
@@ -239,3 +245,4 @@ func (ui *UserInterface) IncrementPosition(size int) {
 	}
 	ui.form.Set("tweetpos", fmt.Sprintf("%d", oldpos + size))
 }
+

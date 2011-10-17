@@ -5,6 +5,7 @@ TARG=gockel
 GOFILES=gockel.go \
 		twitterapi.go \
 		model.go \
+		shortenurl.go \
 		ui.go
 
 
