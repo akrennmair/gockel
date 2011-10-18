@@ -24,7 +24,6 @@ type ActionId int
 const (
 	RESET_LAST_LINE ActionId = iota
 	RAW_INPUT
-	UPDATE_RATELIMIT
 	DELETE_TWEET
 	KEY_PRESS
 )
@@ -74,13 +73,6 @@ func (ui *UserInterface) HandleAction(action UserInterfaceAction) {
 	case RAW_INPUT:
 		input := action.Args[0]
 		ui.HandleRawInput(input)
-	case UPDATE_RATELIMIT:
-		rem, _ := strconv.Atoui(action.Args[0])
-		limit, _ := strconv.Atoui(action.Args[1])
-		reset, _ := strconv.Atoi64(action.Args[2])
-		newtext := fmt.Sprintf("Next reset: %d min %d/%d", reset/60, rem, limit)
-		ui.form.Set("rateinfo", newtext)
-		ui.form.Run(-1)
 	case DELETE_TWEET:
 		ui.form.Modify(action.Args[0], "delete", "")
 		ui.form.Run(-1)

@@ -1,9 +1,5 @@
 package main
 
-import (
-	"strconv"
-)
-
 type Model struct {
 	cmdchan      chan TwitterCommand
 	newtweetchan chan []*Tweet
@@ -70,7 +66,6 @@ func (m *Model) Run() {
 			req.Reply <- tweet
 			close(req.Reply)
 		case tweets := <-new_tweets:
-			m.UpdateRateLimit()
 			for _, t := range tweets {
 				m.tweet_map[*t.Id] = t
 			}
@@ -89,25 +84,17 @@ func (m *Model) HandleCommand(cmd TwitterCommand) {
 			m.last_id = *newtweet.Id
 			m.tweets = append([]*Tweet{newtweet}, m.tweets...)
 		}
-		m.UpdateRateLimit()
 	case RETWEET:
 		if newtweet, err := m.tapi.Retweet(cmd.Data); err == nil {
 			m.tweet_map[*newtweet.Id] = newtweet
 			//m.last_id = *newtweet.Id // how does this react?
 			m.tweets = append([]*Tweet{newtweet}, m.tweets...)
 		}
-		m.UpdateRateLimit()
 		// TODO: add more commands here
 	case FAVORITE:
 		if err := m.tapi.Favorite(cmd.Data); err != nil {
 			// TODO: show error
 		}
-		m.UpdateRateLimit()
 	}
-}
-
-func (m *Model) UpdateRateLimit() {
-	rem, limit, reset := m.tapi.GetRateLimit()
-	m.uiactionchan <- UserInterfaceAction{Action: UPDATE_RATELIMIT, Args: []string{ strconv.Uitoa(rem), strconv.Uitoa(limit), strconv.Itoa64(reset) }}
 }
 

@@ -3,7 +3,6 @@ vbox[root]
     .expand:0
     @style_normal:bg=blue,fg=white,attr=bold
     label text[program]:"" .expand:h
-    label .tie:r text[rateinfo]:"-1/-1" .expand:0
   vbox
     @style_1_normal:fg=yellow,bg=red,attr=bold
     .expand:vh
