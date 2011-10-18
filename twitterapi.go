@@ -473,7 +473,7 @@ func(tapi *TwitterAPI) UserStream(tweetchan chan []*Tweet) {
 }
 
 func(tapi *TwitterAPI) doUserStream(tweetchan chan []*Tweet) os.Error {
-	resp, err := tapi.authcon.Get("https://userstream.twitter.com/2/user.json", oauth.Params{&oauth.Pair{"replies", "all"}}, tapi.access_token)
+	resp, err := tapi.authcon.Get("https://userstream.twitter.com/2/user.json", oauth.Params{}, tapi.access_token)
 	if err != nil {
 		return err
 	}
