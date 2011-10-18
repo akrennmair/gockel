@@ -12,6 +12,7 @@ import (
 	"time"
 	"bufio"
 	"bytes"
+	"log"
 )
 
 type Timeline struct {
@@ -471,15 +472,15 @@ func(tapi *TwitterAPI) UserStream(tweetchan chan []*Tweet, actions chan UserInte
 
 	for {
 		if err := tapi.doUserStream(tweetchan, actions); err != nil {
-			fmt.Fprintf(os.Stderr, "user stream returned error: %v\n", err)
+			log.Printf("user stream returned error: %v", err)
 			if _, ok := err.(HTTPError); ok {
-				fmt.Fprintf(os.Stderr, "HTTP wait: backing off %d seconds\n", http_wait / 1e9)
+				log.Printf("HTTP wait: backing off %d seconds", http_wait / 1e9)
 				time.Sleep(http_wait)
 				if http_wait < MAX_HTTP_WAIT {
 					http_wait *= 2
 				}
 			} else {
-				fmt.Fprintf(os.Stderr, "Network wait: backing off %d milliseconds\n", network_wait / 1e6)
+				log.Printf("Network wait: backing off %d milliseconds", network_wait / 1e6)
 				time.Sleep(network_wait)
 				if network_wait < MAX_NETWORK_WAIT {
 					network_wait += INITIAL_NETWORK_WAIT
@@ -497,7 +498,7 @@ func(tapi *TwitterAPI) doUserStream(tweetchan chan []*Tweet, actions chan UserIn
 
 	if resp.StatusCode > 200 {
 		bodydata, _ := ioutil.ReadAll(resp.Body)
-		fmt.Fprintf(os.Stderr, "HTTP error: %s\n", string(bodydata))
+		log.Printf("HTTP error: %s", string(bodydata))
 		return HTTPError(resp.StatusCode)
 	}
 
@@ -506,14 +507,13 @@ func(tapi *TwitterAPI) doUserStream(tweetchan chan []*Tweet, actions chan UserIn
 	for {
 		line, err := getLine(buf)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "getLine error: %v\n", err)
+			log.Printf("getLine error: %v", err)
 			return err
 		}
 		if len(line) == 0 {
-			fmt.Fprintf(os.Stderr, "empty line from stream\n")
 			continue
 		}
-		fmt.Fprintf(os.Stderr, "data: %s\n", string(line))
+		log.Printf("data: %s", string(line))
 
 		if bytes.HasPrefix(line, []byte("{\"delete\":")) {
 			action := &TwitterEvent{}
@@ -530,7 +530,7 @@ func(tapi *TwitterAPI) doUserStream(tweetchan chan []*Tweet, actions chan UserIn
 
 			newtweet := &Tweet{}
 			if err := json.Unmarshal(line, newtweet); err != nil {
-				fmt.Fprintf(os.Stderr, "couldn't unmarshal tweet: %v\n", err)
+				log.Printf("couldn't unmarshal tweet: %v\n", err)
 				continue
 			}
 			if newtweet.Id != nil && newtweet.Text != nil {

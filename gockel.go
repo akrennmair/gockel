@@ -5,10 +5,35 @@ import (
 	"os"
 	"json"
 	"io/ioutil"
+	"flag"
+	"log"
 	oauth "github.com/akrennmair/goauth"
 )
 
+type DevNullWriter int
+
+func (w *DevNullWriter) Write(b []byte) (n int, err os.Error) {
+	return len(b), nil
+}
+
 func main() {
+	var logfile *string = flag.String("log", "", "logfile")
+
+	flag.Parse()
+
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	devnull := new(DevNullWriter)
+	log.SetOutput(devnull)
+
+	if *logfile != "" {
+		if f, err := os.OpenFile(*logfile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600); err == nil {
+			defer f.Close()
+			log.SetOutput(f)
+		} else {
+			fmt.Fprintf(os.Stderr, "Warning: couldn't open logfile for writing: %v\n", err)
+		}
+	}
+
 
 	tapi := NewTwitterAPI("sDggzGbHbyAfl5fJ87XOCA", "MOCQDL7ot7qIxMwYL5x1mMAqiYBYxNTxPWS6tc6hw")
 
