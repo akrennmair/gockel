@@ -1,7 +1,6 @@
 package main
 
 import (
-	"time"
 	"strconv"
 )
 
@@ -51,21 +50,16 @@ func NewModel(t *TwitterAPI, cc chan TwitterCommand, ntc chan []*Tweet, lc chan 
 func (m *Model) Run() {
 	m.last_id = int64(0)
 
-	new_tweets := make(chan *Timeline, 10)
-	go func() {
-		ticker := make(chan int)
-		go Ticker(ticker, 20e9)
-		for {
-			select {
-			case <-ticker:
-				home_tl, err := m.tapi.HomeTimeline(50, m.last_id)
-				if err == nil && len(home_tl.Tweets) > 0 && home_tl.Tweets[0].Id != nil {
-					m.last_id = *home_tl.Tweets[0].Id
-					new_tweets <-home_tl
-				}
-			}
-		}
-	}()
+	new_tweets := make(chan []*Tweet, 10)
+
+	// pre-fill with 50 latest items from home timeline
+	home_tl, err := m.tapi.HomeTimeline(50, 0)
+	if err == nil && len(home_tl.Tweets) > 0 {
+		new_tweets <-home_tl.Tweets
+	}
+
+	// then start userstream
+	go m.tapi.UserStream(new_tweets)
 
 	for {
 		select {
@@ -75,13 +69,15 @@ func (m *Model) Run() {
 			tweet := m.tweet_map[req.Status_id]
 			req.Reply <- tweet
 			close(req.Reply)
-		case home_tl := <-new_tweets:
+		case tweets := <-new_tweets:
 			m.UpdateRateLimit()
-			for _, t := range home_tl.Tweets {
-				m.tweet_map[*t.Id] = t
+			for _, t := range tweets {
+				if t != nil {
+					m.tweet_map[*t.Id] = t
+					m.tweets = append([]*Tweet{ t }, m.tweets...)
+				}
 			}
-			m.tweets = append(home_tl.Tweets, m.tweets...)
-			m.newtweetchan <- home_tl.Tweets
+			m.newtweetchan <- tweets
 		}
 	}
 }
@@ -94,7 +90,6 @@ func (m *Model) HandleCommand(cmd TwitterCommand) {
 			m.tweet_map[*newtweet.Id] = newtweet
 			m.last_id = *newtweet.Id
 			m.tweets = append([]*Tweet{newtweet}, m.tweets...)
-			m.newtweetchan <- []*Tweet{newtweet}
 		}
 		m.UpdateRateLimit()
 	case RETWEET:
@@ -102,7 +97,6 @@ func (m *Model) HandleCommand(cmd TwitterCommand) {
 			m.tweet_map[*newtweet.Id] = newtweet
 			//m.last_id = *newtweet.Id // how does this react?
 			m.tweets = append([]*Tweet{newtweet}, m.tweets...)
-			m.newtweetchan <- []*Tweet{newtweet}
 		}
 		m.UpdateRateLimit()
 		// TODO: add more commands here
@@ -119,9 +113,3 @@ func (m *Model) UpdateRateLimit() {
 	m.uiactionchan <- UserInterfaceAction{Action: UPDATE_RATELIMIT, Args: []string{ strconv.Uitoa(rem), strconv.Uitoa(limit), strconv.Itoa64(reset) }}
 }
 
-func Ticker(tickchan chan int, ns int64) {
-	for {
-		tickchan <- 1
-		time.Sleep(ns)
-	}
-}

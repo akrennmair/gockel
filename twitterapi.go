@@ -10,6 +10,7 @@ import (
 	"http"
 	"strings"
 	"time"
+	"bufio"
 )
 
 type Timeline struct {
@@ -72,9 +73,16 @@ type PlaceDesc struct {
 	Country_code *string
 }
 
-const request_token_url = "http://twitter.com/oauth/request_token"
-const access_token_url = "http://twitter.com/oauth/access_token"
-const authorization_url = "http://twitter.com/oauth/authorize"
+const (
+	request_token_url = "http://twitter.com/oauth/request_token"
+	access_token_url = "http://twitter.com/oauth/access_token"
+	authorization_url = "http://twitter.com/oauth/authorize"
+
+	INITIAL_NETWORK_WAIT int64 = 250e6 // 250 milliseconds
+	INITIAL_HTTP_WAIT    int64 = 10e9  // 10 seconds
+	MAX_NETWORK_WAIT     int64 = 16e9  // 16 seconds
+	MAX_HTTP_WAIT        int64 = 240e9 // 240 seconds
+)
 
 type TwitterAPI struct {
 	authcon         *oauth.OAuthConsumer
@@ -431,6 +439,83 @@ func (tapi *TwitterAPI) get_statuses(id string, p ...*oauth.Pair) ([]byte, os.Er
 	tapi.UpdateRatelimit(resp.Header)
 
 	return ioutil.ReadAll(resp.Body)
+}
+
+type HTTPError int
+
+func (e HTTPError) String() string {
+	return "HTTP code " + strconv.Itoa(int(e))
+}
+
+func(tapi *TwitterAPI) UserStream(tweetchan chan []*Tweet) {
+	network_wait := INITIAL_NETWORK_WAIT
+	http_wait := INITIAL_HTTP_WAIT
+
+	for {
+		if err := tapi.doUserStream(tweetchan); err != nil {
+			if _, ok := err.(HTTPError); ok {
+				if http_wait < MAX_HTTP_WAIT {
+					http_wait *= 2
+				}
+				time.Sleep(http_wait)
+			} else {
+				if network_wait < MAX_NETWORK_WAIT {
+					network_wait += INITIAL_NETWORK_WAIT
+				}
+				time.Sleep(network_wait)
+			}
+		}
+	}
+}
+
+func(tapi *TwitterAPI) doUserStream(tweetchan chan []*Tweet) os.Error {
+	resp, err := tapi.authcon.Get("https://userstream.twitter.com/2/user.json?replies=all", oauth.Params{}, tapi.access_token)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode > 200 {
+		return HTTPError(resp.StatusCode)
+	}
+
+	buf := bufio.NewReader(resp.Body)
+	
+	for {
+		line, err := getLine(buf)
+		if err != nil {
+			return err
+		}
+		if len(line) == 0 {
+			//fmt.Fprintf(os.Stderr, "empty line from stream\n")
+			continue
+		}
+		//fmt.Fprintf(os.Stderr, "data: %s\n", string(line))
+		newtweet := &Tweet{}
+		if err := json.Unmarshal(line, newtweet); err != nil {
+			//fmt.Fprintf(os.Stderr, "couldn't unmarshal tweet: %v\ndata: %s\n", err, string(line))
+			continue
+		}
+		if newtweet.Id != nil && newtweet.Text != nil {
+			tweetchan <- []*Tweet{ newtweet }
+		}
+	}
+	// not reached
+	return nil
+}
+
+func getLine(buf *bufio.Reader) ([]byte, os.Error) {
+	line := []byte{}
+	for {
+		data, isprefix, err := buf.ReadLine()
+		if err != nil {
+			return line, err
+		}
+		line = append(line, data...)
+		if !isprefix {
+			break
+		}
+	}
+	return line, nil
 }
 
 func (tapi *TwitterAPI) UpdateRatelimit(hdrs http.Header) {
