@@ -72,11 +72,9 @@ func (m *Model) Run() {
 		case tweets := <-new_tweets:
 			m.UpdateRateLimit()
 			for _, t := range tweets {
-				if t != nil {
-					m.tweet_map[*t.Id] = t
-					m.tweets = append([]*Tweet{ t }, m.tweets...)
-				}
+				m.tweet_map[*t.Id] = t
 			}
+			m.tweets = append(tweets, m.tweets...)
 			m.newtweetchan <- tweets
 		}
 	}

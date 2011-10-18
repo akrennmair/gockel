@@ -102,6 +102,7 @@ func NewTwitterAPI(consumer_key, consumer_secret string) *TwitterAPI {
 			AuthorizationURL: authorization_url,
 			ConsumerKey:      consumer_key,
 			ConsumerSecret:   consumer_secret,
+			UserAgent:        "gockel/0.0 (https://github.com/akrennmair/gockel)",
 			CallBackURL:      "oob",
 		},
 	}
@@ -453,28 +454,33 @@ func(tapi *TwitterAPI) UserStream(tweetchan chan []*Tweet) {
 
 	for {
 		if err := tapi.doUserStream(tweetchan); err != nil {
+			//fmt.Fprintf(os.Stderr, "user stream returned error: %v\n", err)
 			if _, ok := err.(HTTPError); ok {
+				//fmt.Fprintf(os.Stderr, "HTTP wait: backing off %d seconds\n", http_wait / 1e9)
+				time.Sleep(http_wait)
 				if http_wait < MAX_HTTP_WAIT {
 					http_wait *= 2
 				}
-				time.Sleep(http_wait)
 			} else {
+				//fmt.Fprintf(os.Stderr, "Network wait: backing off %d milliseconds\n", network_wait / 1e6)
+				time.Sleep(network_wait)
 				if network_wait < MAX_NETWORK_WAIT {
 					network_wait += INITIAL_NETWORK_WAIT
 				}
-				time.Sleep(network_wait)
 			}
 		}
 	}
 }
 
 func(tapi *TwitterAPI) doUserStream(tweetchan chan []*Tweet) os.Error {
-	resp, err := tapi.authcon.Get("https://userstream.twitter.com/2/user.json?replies=all", oauth.Params{}, tapi.access_token)
+	resp, err := tapi.authcon.Get("https://userstream.twitter.com/2/user.json", oauth.Params{&oauth.Pair{"replies", "all"}}, tapi.access_token)
 	if err != nil {
 		return err
 	}
 
 	if resp.StatusCode > 200 {
+		//bodydata, _ := ioutil.ReadAll(resp.Body)
+		//fmt.Fprintf(os.Stderr, "HTTP error: %s\n", string(bodydata))
 		return HTTPError(resp.StatusCode)
 	}
 
@@ -483,6 +489,7 @@ func(tapi *TwitterAPI) doUserStream(tweetchan chan []*Tweet) os.Error {
 	for {
 		line, err := getLine(buf)
 		if err != nil {
+			//fmt.Fprintf(os.Stderr, "getLine error: %v\n", err)
 			return err
 		}
 		if len(line) == 0 {
