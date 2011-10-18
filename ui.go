@@ -25,6 +25,7 @@ const (
 	RESET_LAST_LINE ActionId = iota
 	RAW_INPUT
 	UPDATE_RATELIMIT
+	DELETE_TWEET
 	KEY_PRESS
 )
 
@@ -79,6 +80,9 @@ func (ui *UserInterface) HandleAction(action UserInterfaceAction) {
 		reset, _ := strconv.Atoi64(action.Args[2])
 		newtext := fmt.Sprintf("Next reset: %d min %d/%d", reset/60, rem, limit)
 		ui.form.Set("rateinfo", newtext)
+		ui.form.Run(-1)
+	case DELETE_TWEET:
+		ui.form.Modify(action.Args[0], "delete", "")
 		ui.form.Run(-1)
 	case KEY_PRESS:
 		ui.UpdateInfoLine()
@@ -231,7 +235,7 @@ func formatTweets(tweets []*Tweet) string {
 
 	for _, t := range tweets {
 		tweetline := fmt.Sprintf("[%16s] %s", "@"+*t.User.Screen_name, *t.Text)
-		buf.WriteString(fmt.Sprintf("{listitem[%v] text:%v}", *t.Id, stfl.Quote(html.UnescapeString(tweetline))))
+		buf.WriteString(fmt.Sprintf("{listitem[%d] text:%v}", *t.Id, stfl.Quote(html.UnescapeString(tweetline))))
 	}
 
 	buf.WriteString("}")

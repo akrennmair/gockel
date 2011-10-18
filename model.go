@@ -59,7 +59,7 @@ func (m *Model) Run() {
 	}
 
 	// then start userstream
-	go m.tapi.UserStream(new_tweets)
+	go m.tapi.UserStream(new_tweets, m.uiactionchan)
 
 	for {
 		select {

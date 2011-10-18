@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 	"bufio"
+	"bytes"
 )
 
 type Timeline struct {
@@ -72,6 +73,22 @@ type PlaceDesc struct {
 	Url          *string
 	Country_code *string
 }
+
+type TwitterEvent struct {
+	Delete       *WhatEvent
+}
+
+type WhatEvent struct {
+	Status *EventDetail
+}
+
+type EventDetail struct {
+	Id          *int64
+	Id_str      *string
+	User_id     *int64
+	User_id_str *string
+}
+
 
 const (
 	request_token_url = "http://twitter.com/oauth/request_token"
@@ -448,21 +465,21 @@ func (e HTTPError) String() string {
 	return "HTTP code " + strconv.Itoa(int(e))
 }
 
-func(tapi *TwitterAPI) UserStream(tweetchan chan []*Tweet) {
+func(tapi *TwitterAPI) UserStream(tweetchan chan []*Tweet, actions chan UserInterfaceAction) {
 	network_wait := INITIAL_NETWORK_WAIT
 	http_wait := INITIAL_HTTP_WAIT
 
 	for {
-		if err := tapi.doUserStream(tweetchan); err != nil {
-			//fmt.Fprintf(os.Stderr, "user stream returned error: %v\n", err)
+		if err := tapi.doUserStream(tweetchan, actions); err != nil {
+			fmt.Fprintf(os.Stderr, "user stream returned error: %v\n", err)
 			if _, ok := err.(HTTPError); ok {
-				//fmt.Fprintf(os.Stderr, "HTTP wait: backing off %d seconds\n", http_wait / 1e9)
+				fmt.Fprintf(os.Stderr, "HTTP wait: backing off %d seconds\n", http_wait / 1e9)
 				time.Sleep(http_wait)
 				if http_wait < MAX_HTTP_WAIT {
 					http_wait *= 2
 				}
 			} else {
-				//fmt.Fprintf(os.Stderr, "Network wait: backing off %d milliseconds\n", network_wait / 1e6)
+				fmt.Fprintf(os.Stderr, "Network wait: backing off %d milliseconds\n", network_wait / 1e6)
 				time.Sleep(network_wait)
 				if network_wait < MAX_NETWORK_WAIT {
 					network_wait += INITIAL_NETWORK_WAIT
@@ -472,15 +489,15 @@ func(tapi *TwitterAPI) UserStream(tweetchan chan []*Tweet) {
 	}
 }
 
-func(tapi *TwitterAPI) doUserStream(tweetchan chan []*Tweet) os.Error {
+func(tapi *TwitterAPI) doUserStream(tweetchan chan []*Tweet, actions chan UserInterfaceAction) os.Error {
 	resp, err := tapi.authcon.Get("https://userstream.twitter.com/2/user.json", oauth.Params{}, tapi.access_token)
 	if err != nil {
 		return err
 	}
 
 	if resp.StatusCode > 200 {
-		//bodydata, _ := ioutil.ReadAll(resp.Body)
-		//fmt.Fprintf(os.Stderr, "HTTP error: %s\n", string(bodydata))
+		bodydata, _ := ioutil.ReadAll(resp.Body)
+		fmt.Fprintf(os.Stderr, "HTTP error: %s\n", string(bodydata))
 		return HTTPError(resp.StatusCode)
 	}
 
@@ -489,21 +506,36 @@ func(tapi *TwitterAPI) doUserStream(tweetchan chan []*Tweet) os.Error {
 	for {
 		line, err := getLine(buf)
 		if err != nil {
-			//fmt.Fprintf(os.Stderr, "getLine error: %v\n", err)
+			fmt.Fprintf(os.Stderr, "getLine error: %v\n", err)
 			return err
 		}
 		if len(line) == 0 {
-			//fmt.Fprintf(os.Stderr, "empty line from stream\n")
+			fmt.Fprintf(os.Stderr, "empty line from stream\n")
 			continue
 		}
-		//fmt.Fprintf(os.Stderr, "data: %s\n", string(line))
-		newtweet := &Tweet{}
-		if err := json.Unmarshal(line, newtweet); err != nil {
-			//fmt.Fprintf(os.Stderr, "couldn't unmarshal tweet: %v\ndata: %s\n", err, string(line))
-			continue
-		}
-		if newtweet.Id != nil && newtweet.Text != nil {
-			tweetchan <- []*Tweet{ newtweet }
+		fmt.Fprintf(os.Stderr, "data: %s\n", string(line))
+
+		if bytes.HasPrefix(line, []byte("{\"delete\":")) {
+			action := &TwitterEvent{}
+
+			if err := json.Unmarshal(line, action); err != nil {
+				continue
+			}
+
+			if action.Delete != nil && action.Delete.Status != nil && action.Delete.Status.Id_str != nil {
+				actions <- UserInterfaceAction{DELETE_TWEET, []string{*action.Delete.Status.Id_str}}
+			}
+
+		} else {
+
+			newtweet := &Tweet{}
+			if err := json.Unmarshal(line, newtweet); err != nil {
+				fmt.Fprintf(os.Stderr, "couldn't unmarshal tweet: %v\n", err)
+				continue
+			}
+			if newtweet.Id != nil && newtweet.Text != nil {
+				tweetchan <- []*Tweet{ newtweet }
+			}
 		}
 	}
 	// not reached
