@@ -120,7 +120,7 @@ func NewTwitterAPI(consumer_key, consumer_secret string) *TwitterAPI {
 			AuthorizationURL: authorization_url,
 			ConsumerKey:      consumer_key,
 			ConsumerSecret:   consumer_secret,
-			UserAgent:        "gockel/0.0 (https://github.com/akrennmair/gockel)",
+			UserAgent:        PROGRAM_NAME + "/" + PROGRAM_VERSION + " (" + PROGRAM_URL + ")",
 			CallBackURL:      "oob",
 		},
 	}

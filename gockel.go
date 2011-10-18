@@ -10,6 +10,12 @@ import (
 	oauth "github.com/akrennmair/goauth"
 )
 
+const (
+	PROGRAM_NAME = "gockel"
+	PROGRAM_VERSION = "0.0"
+	PROGRAM_URL = "https://github.com/akrennmair/gockel"
+)
+
 type DevNullWriter int
 
 func (w *DevNullWriter) Write(b []byte) (n int, err os.Error) {
