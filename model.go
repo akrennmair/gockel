@@ -83,17 +83,23 @@ func (m *Model) HandleCommand(cmd TwitterCommand) {
 			m.tweet_map[*newtweet.Id] = newtweet
 			m.last_id = *newtweet.Id
 			m.tweets = append([]*Tweet{newtweet}, m.tweets...)
+			m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{""}}
+		} else {
+			m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{"Posting tweet failed: " + err.String()}}
 		}
 	case RETWEET:
 		if newtweet, err := m.tapi.Retweet(cmd.Data); err == nil {
 			m.tweet_map[*newtweet.Id] = newtweet
-			//m.last_id = *newtweet.Id // how does this react?
 			m.tweets = append([]*Tweet{newtweet}, m.tweets...)
+			m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{""}}
+		} else {
+			m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{"Retweeting failed:" + err.String()}}
 		}
-		// TODO: add more commands here
 	case FAVORITE:
-		if err := m.tapi.Favorite(cmd.Data); err != nil {
-			// TODO: show error
+		if err := m.tapi.Favorite(cmd.Data); err == nil {
+			m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{""}}
+		} else {
+			m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{"Favoriting tweet failed: " + err.String()}}
 		}
 	}
 }

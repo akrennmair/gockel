@@ -7,6 +7,7 @@ import (
 	"os"
 	"html"
 	"utf8"
+	"log"
 	stfl "github.com/akrennmair/go-stfl"
 )
 
@@ -25,6 +26,7 @@ const (
 	RESET_LAST_LINE ActionId = iota
 	RAW_INPUT
 	DELETE_TWEET
+	SHOW_MSG
 	KEY_PRESS
 )
 
@@ -82,9 +84,13 @@ func (ui *UserInterface) HandleAction(action UserInterfaceAction) {
 			}
 		}
 		ui.form.Run(-1)
+	case SHOW_MSG:
+		ui.form.Set("msg", action.Args[0])
+		ui.form.Run(-1)
 	case KEY_PRESS:
 		ui.UpdateInfoLine()
 		ui.UpdateRemaining()
+		ui.form.Set("msg", "")
 		ui.form.Run(-1)
 	}
 }
@@ -144,32 +150,38 @@ func (ui *UserInterface) HandleRawInput(input string) {
 		var err os.Error
 		ui.in_reply_to_status_id, err = strconv.Atoi64(ui.form.Get("status_id"))
 		if err != nil {
-			// TODO: show error
+			log.Printf("conversion of %s failed: %v", ui.form.Get("status_id"), err)
+			ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Error: couldn't determine status ID! (BUG?)"}}
 			break
 		}
 		tweet := ui.LookupTweet(ui.in_reply_to_status_id)
 		if tweet != nil {
 			ui.SetInputField("Reply: ", "@"+*tweet.User.Screen_name+" ","end-input")
 		} else {
-			//TODO: show error
+			log.Printf("tweet lookup for %d failed\n", ui.in_reply_to_status_id)
+			ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Error: tweet lookup by status ID failed! (BUG?)"}}
 		}
 	case "^R":
 		status_id, err := strconv.Atoi64(ui.form.Get("status_id"))
 		if err != nil {
-			// TODO: show error
+			log.Printf("conversion of %s failed: %v", ui.form.Get("status_id"), err)
+			ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Error: couldn't determine status ID! (BUG?)"}}
 			break
 		}
 		status_id_ptr := new(int64)
 		*status_id_ptr = status_id
+		ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Retweeting..."}}
 		ui.cmdchan <- TwitterCommand{Cmd: RETWEET, Data: Tweet{Id: status_id_ptr}}
 	case "^F":
 		status_id, err := strconv.Atoi64(ui.form.Get("status_id"))
 		if err != nil {
-			// TODO: show error
+			log.Printf("conversion of %s failed: %v", ui.form.Get("status_id"), err)
+			ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Error: couldn't determine status ID! (BUG?)"}}
 			break
 		}
 		status_id_ptr := new(int64)
 		*status_id_ptr = status_id
+		ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Favoriting..."}}
 		ui.cmdchan <- TwitterCommand{Cmd: FAVORITE, Data: Tweet{Id: status_id_ptr}}
 	case "^O":
 		if ui.form.GetFocus() == "tweetinput" {
@@ -187,6 +199,7 @@ func (ui *UserInterface) HandleRawInput(input string) {
 				*t.In_reply_to_status_id = ui.in_reply_to_status_id
 				ui.in_reply_to_status_id = int64(0)
 			}
+			ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Posting tweet..."}}
 			ui.cmdchan <- TwitterCommand{Cmd: UPDATE, Data: t}
 		}
 		ui.ResetLastLine()

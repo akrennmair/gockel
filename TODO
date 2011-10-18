@@ -2,7 +2,6 @@ TODO list for gockel
 ====================
 
 - implement highlighting by regular expression
-- show more (and better) error messages
 - write more tests
 - put configuration and access tokens in ~/.gockel/
 
@@ -11,3 +10,4 @@ done items:
 - implement user stream API support
 - properly move selection when a tweet gets deleted
 - proper configurable logging
+- show more (and better) error messages
