@@ -75,6 +75,12 @@ func (ui *UserInterface) HandleAction(action UserInterfaceAction) {
 		ui.HandleRawInput(input)
 	case DELETE_TWEET:
 		ui.form.Modify(action.Args[0], "delete", "")
+		if current_status_id, err := strconv.Atoi64(ui.form.Get("status_id")); err == nil {
+			delete_id, _ := strconv.Atoi64(action.Args[0])
+			if delete_id > current_status_id {
+				ui.IncrementPosition(-1)
+			}
+		}
 		ui.form.Run(-1)
 	case KEY_PRESS:
 		ui.UpdateInfoLine()

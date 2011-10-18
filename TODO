@@ -5,9 +5,9 @@ TODO list for gockel
 - show more (and better) error messages
 - write more tests
 - put configuration and access tokens in ~/.gockel/
-- properly move selection when a tweet gets deleted
 - proper configurable logging
 
 done items:
 ===========
 - implement user stream API support
+- properly move selection when a tweet gets deleted
