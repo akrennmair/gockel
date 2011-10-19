@@ -495,6 +495,7 @@ func(tapi *TwitterAPI) doUserStream(tweetchan chan []*Tweet, actions chan UserIn
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode > 200 {
 		bodydata, _ := ioutil.ReadAll(resp.Body)

@@ -11,3 +11,5 @@ done items:
 - properly move selection when a tweet gets deleted
 - proper configurable logging
 - show more (and better) error messages
+- fire off all API calls as independent goroutines
+- investigate sudden stop (first step, maybe: improve logging)

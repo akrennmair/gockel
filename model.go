@@ -1,14 +1,15 @@
 package main
 
 type Model struct {
-	cmdchan      chan TwitterCommand
-	newtweetchan chan []*Tweet
-	tapi         *TwitterAPI
-	tweets       []*Tweet
-	tweet_map    map[int64]*Tweet
-	lookupchan   chan TweetRequest
-	uiactionchan chan UserInterfaceAction
-	last_id      int64
+	cmdchan       chan TwitterCommand
+	newtweetchan  chan []*Tweet
+	newtweets_int chan []*Tweet
+	tapi          *TwitterAPI
+	tweets        []*Tweet
+	tweet_map     map[int64]*Tweet
+	lookupchan    chan TweetRequest
+	uiactionchan  chan UserInterfaceAction
+	last_id       int64
 }
 
 type TweetRequest struct {
@@ -32,12 +33,13 @@ type TwitterCommand struct {
 
 func NewModel(t *TwitterAPI, cc chan TwitterCommand, ntc chan []*Tweet, lc chan TweetRequest, uac chan UserInterfaceAction) *Model {
 	model := &Model{
-		cmdchan:      cc,
-		newtweetchan: ntc,
-		tapi:         t,
-		lookupchan:   lc,
-		tweet_map:    map[int64]*Tweet{},
-		uiactionchan: uac,
+		cmdchan:       cc,
+		newtweetchan:  ntc,
+		newtweets_int: make(chan []*Tweet, 10),
+		tapi:          t,
+		lookupchan:    lc,
+		tweet_map:     map[int64]*Tweet{},
+		uiactionchan:  uac,
 	}
 
 	return model
@@ -65,6 +67,11 @@ func (m *Model) Run() {
 			tweet := m.tweet_map[req.Status_id]
 			req.Reply <- tweet
 			close(req.Reply)
+		case tweets := <-m.newtweets_int:
+			for _, t := range tweets {
+				m.tweet_map[*t.Id] = t
+			}
+			m.tweets = append(tweets, m.tweets...)
 		case tweets := <-new_tweets:
 			for _, t := range tweets {
 				m.tweet_map[*t.Id] = t
@@ -79,28 +86,31 @@ func (m *Model) Run() {
 func (m *Model) HandleCommand(cmd TwitterCommand) {
 	switch cmd.Cmd {
 	case UPDATE:
-		if newtweet, err := m.tapi.Update(cmd.Data); err == nil {
-			m.tweet_map[*newtweet.Id] = newtweet
-			m.last_id = *newtweet.Id
-			m.tweets = append([]*Tweet{newtweet}, m.tweets...)
-			m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{""}}
-		} else {
-			m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{"Posting tweet failed: " + err.String()}}
-		}
+		go func() {
+			if newtweet, err := m.tapi.Update(cmd.Data); err == nil {
+				m.newtweets_int <- []*Tweet{newtweet}
+				m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{""}}
+			} else {
+				m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{"Posting tweet failed: " + err.String()}}
+			}
+		}()
 	case RETWEET:
-		if newtweet, err := m.tapi.Retweet(cmd.Data); err == nil {
-			m.tweet_map[*newtweet.Id] = newtweet
-			m.tweets = append([]*Tweet{newtweet}, m.tweets...)
-			m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{""}}
-		} else {
-			m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{"Retweeting failed:" + err.String()}}
-		}
+		go func() {
+			if newtweet, err := m.tapi.Retweet(cmd.Data); err == nil {
+				m.newtweets_int <- []*Tweet{newtweet}
+				m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{""}}
+			} else {
+				m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{"Retweeting failed:" + err.String()}}
+			}
+		}()
 	case FAVORITE:
-		if err := m.tapi.Favorite(cmd.Data); err == nil {
-			m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{""}}
-		} else {
-			m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{"Favoriting tweet failed: " + err.String()}}
-		}
+		go func() {
+			if err := m.tapi.Favorite(cmd.Data); err == nil {
+				m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{""}}
+			} else {
+				m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{"Favoriting tweet failed: " + err.String()}}
+			}
+		}()
 	}
 }
 
