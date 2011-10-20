@@ -121,6 +121,7 @@ func NewTwitterAPI(consumer_key, consumer_secret string) *TwitterAPI {
 			ConsumerKey:      consumer_key,
 			ConsumerSecret:   consumer_secret,
 			UserAgent:        PROGRAM_NAME + "/" + PROGRAM_VERSION + " (" + PROGRAM_URL + ")",
+			Timeout:          60e9, // 60 second timeout
 			CallBackURL:      "oob",
 		},
 	}
@@ -469,22 +470,32 @@ func (e HTTPError) String() string {
 func(tapi *TwitterAPI) UserStream(tweetchan chan []*Tweet, actions chan UserInterfaceAction) {
 	network_wait := INITIAL_NETWORK_WAIT
 	http_wait := INITIAL_HTTP_WAIT
+	last_network_backoff := time.Seconds()
+	last_http_backoff := time.Seconds()
 
 	for {
 		if err := tapi.doUserStream(tweetchan, actions); err != nil {
 			log.Printf("user stream returned error: %v", err)
 			if _, ok := err.(HTTPError); ok {
+				if (time.Seconds() - last_http_backoff) > 1800 {
+					http_wait = INITAL_HTTP_WAIT
+				}
 				log.Printf("HTTP wait: backing off %d seconds", http_wait / 1e9)
 				time.Sleep(http_wait)
 				if http_wait < MAX_HTTP_WAIT {
 					http_wait *= 2
 				}
+				last_http_backoff = time.Seconds()
 			} else {
+				if (time.Seconds() - last_network_backoff) > 1800 {
+					network_wait = INITAL_NETWORK_WAIT
+				}
 				log.Printf("Network wait: backing off %d milliseconds", network_wait / 1e6)
 				time.Sleep(network_wait)
 				if network_wait < MAX_NETWORK_WAIT {
 					network_wait += INITIAL_NETWORK_WAIT
 				}
+				last_network_backoff = time.Seconds()
 			}
 		}
 	}
