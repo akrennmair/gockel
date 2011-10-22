@@ -60,7 +60,7 @@ func NewUserInterface(cc chan TwitterCommand, tc chan []*Tweet, lc chan TweetReq
     .expand:0
     .display:1
     label text[infoline]:">> " .expand:h style_normal:bg=blue,fg=yellow,attr=bold
-    label text[shorthelp]:"q:Quit ENTER:New Tweet ^R:Retweet r:Reply" .expand:h style_normal:bg=blue,fg=white,attr=bold
+    label text[shorthelp]:"q:Quit ENTER:New Tweet ^R:Retweet r:Reply ^F:Favorite ^O:Shorten URL" .expand:h style_normal:bg=blue,fg=white,attr=bold
   hbox[lastline]
     .expand:0
     label text[msg]:"" .expand:h
