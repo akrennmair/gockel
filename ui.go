@@ -44,6 +44,7 @@ func NewUserInterface(cc chan TwitterCommand, tc chan []*Tweet, lc chan TweetReq
 	stfl.Init()
 	ui := &UserInterface{
 		form:                  stfl.Create(`vbox[root]
+  @style_normal[style_background]:
   vbox
     .expand:vh
     list[tweets]
@@ -79,7 +80,7 @@ func (ui *UserInterface) setColors() {
 		return
 	}
 
-	for _, elem := range []string{ "shorthelp", "infotext", "listfocus", "listnormal" } {
+	for _, elem := range []string{ "shorthelp", "infotext", "listfocus", "listnormal", "background", "input" } {
 		if value, err := ui.cfg.GetString("colors", elem); err == nil && value != "" {
 			// TODO: check whether value is syntactically valid
 			ui.form.Set("style_" + elem, value)
@@ -320,7 +321,7 @@ func (ui *UserInterface) InputLoop() {
 
 func (ui *UserInterface) SetInputField(prompt, deftext, endevent string) {
 	pos := strconv.Itoa(utf8.RuneCountInString(deftext))
-	last_line_text := "{hbox[lastline] .expand:0 {label .tie:r .expand:0 text[remaining]:\"\" style_normal[remaining_style]:fg=white}{label .expand:0 text:\"| \"}{label .expand:0 text[prompt]:" + stfl.Quote(prompt) + "}{!input[tweetinput] on_ESC:cancel-input on_ENTER:" + endevent + " modal:1 .expand:h text[inputfield]:" + stfl.Quote(deftext) + " pos[inputpos]:0 offset:0}}"
+	last_line_text := "{hbox[lastline] @style_normal[style_input]: .expand:0 {label .tie:r .expand:0 text[remaining]:\"\" style_normal[remaining_style]:fg=white}{label .expand:0 text:\"| \"}{label .expand:0 text[prompt]:" + stfl.Quote(prompt) + "}{!input[tweetinput] on_ESC:cancel-input on_ENTER:" + endevent + " modal:1 .expand:h text[inputfield]:" + stfl.Quote(deftext) + " pos[inputpos]:0 offset:0}}"
 
 	ui.form.Modify("lastline", "replace", last_line_text)
 	ui.form.Run(-1)

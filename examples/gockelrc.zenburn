@@ -1,0 +1,15 @@
+[colors]
+listnormal = fg=color188,bg=color237
+listfocus = fg=color108,bg=color236
+infotext = fg=color115,bg=color236
+shorthelp = fg=color223,bg=color237
+background = bg=color237
+input = fg=color188,bg=color237
+
+[highlight_hashtags]
+attributes = fg=color116,bg=color237,attr=bold
+regex = /#[^ ]+/
+
+[highlight_urls]
+attributes = fg=color147,bg=color237
+regex = (mailto|ftp|https?):[^ )\]]*
