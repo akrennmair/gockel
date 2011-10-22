@@ -55,9 +55,10 @@ func (m *Model) Run() {
 	new_tweets := make(chan []*Tweet, 10)
 
 	// pre-fill with 50 latest items from home timeline
-	home_tl, err := m.tapi.HomeTimeline(50, 0)
-	if err == nil && len(home_tl.Tweets) > 0 {
-		new_tweets <-home_tl.Tweets
+	if home_tl, err := m.tapi.HomeTimeline(50, 0); err == nil {
+		if len(home_tl.Tweets) > 0 {
+			new_tweets <-home_tl.Tweets
+		}
 	}
 
 	// then start userstream

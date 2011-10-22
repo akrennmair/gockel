@@ -68,19 +68,23 @@ func main() {
 	} else {
 		auth_url, err := tapi.GetRequestAuthorizationURL()
 		if err != nil {
-			fmt.Println(err.String())
+			log.Printf("GetRequestAuthorizationURL failed: %v", err)
+			fmt.Fprintf(os.Stderr, "GetRequestAuthorizationURL failed: %v\n", err)
 			return
 		}
 
 		var pin string
-		fmt.Printf("Open %s\n", auth_url)
-		fmt.Printf("PIN Number: ")
+		fmt.Printf("%s doesn't yet have information how to access your Twitter account.\n", PROGRAM_NAME)
+		fmt.Println("In order to provide it with authentication information, open the following")
+		fmt.Printf("URL, confirm that you allow %s to access your Twitter account and enter\nthe displayed PIN code.\n", PROGRAM_NAME)
+		fmt.Printf("\nPlease open the following URL: %s\n", auth_url)
+		fmt.Print("\nEnter PIN code: ")
 		fmt.Scanln(&pin)
 
 		tapi.SetPIN(pin)
 
-		if saveerr := SaveAccessToken(tapi.GetAccessToken(), cfgdir); saveerr != nil {
-			fmt.Printf("saving access token failed: %s\n", saveerr.String())
+		if err := SaveAccessToken(tapi.GetAccessToken(), cfgdir); err != nil {
+			fmt.Printf("saving access token failed: %v\n", err)
 			return
 		}
 	}
