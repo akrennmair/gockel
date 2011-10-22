@@ -104,8 +104,7 @@ The following user interface elements can be configured color-wise:
 * background: general application background
 * input: input field
 
-Example
-~~~~~~~
+### Example ###
 
 	shorthelp = fg=white,bg=red
 	infotext = bg=white,fg=red
@@ -125,8 +124,7 @@ expression that describes what shall be highlighted. If you regular expression
 starts with a special character such as '#' (comment in INI-style configuration
 files), you can mark start and end of regular expression with forward slashes.
 
-Example
-~~~~~~~
+### Example ###
 
 	[highlight_urls]
 	attributes = fg=green
