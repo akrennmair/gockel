@@ -2,7 +2,6 @@ TODO list for gockel
 ====================
 
 - write more tests
-- put configuration and access tokens in ~/.gockel/
 - replace newlines with spaces in tweet renderer
 
 done items:
@@ -14,3 +13,4 @@ done items:
 - fire off all API calls as independent goroutines
 - investigate sudden stop (first step, maybe: improve logging)
 - implement highlighting by regular expression
+- put configuration and access tokens in ~/.gockel/
