@@ -321,7 +321,7 @@ func (ui *UserInterface) addTweets(tweets []*Tweet) {
 	buf := bytes.NewBufferString("{list")
 
 	for _, t := range tweets {
-		tweetline := fmt.Sprintf("[%16s] %s", "@"+*t.User.Screen_name, html.UnescapeString(*t.Text))
+		tweetline := fmt.Sprintf("[%16s] %s", "@"+*t.User.Screen_name, html.UnescapeString(strings.Replace(strings.Replace(*t.Text, "\n", " ", -1), "\r", " ", -1)))
 		tweetline = strings.Replace(tweetline, "<", "<>", -1)
 		tweetline = ui.highlight(tweetline)
 		buf.WriteString(fmt.Sprintf("{listitem[%d] text:%v}", *t.Id, stfl.Quote(tweetline)))
