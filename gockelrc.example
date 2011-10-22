@@ -1,0 +1,13 @@
+http_timeout = 60
+
+[highlight_nicks]
+attributes = fg=yellow,bg=red,attr=bold
+regex = @(der_ak|iamnion)
+
+[highlight_hashtags]
+attributes = fg=cyan,attr=bold
+regex = /#[^ ]+/
+
+[highlight_urls]
+attributes = fg=green
+regex = (mailto|ftp|https?):[^ )\]]*

@@ -8,6 +8,8 @@ import (
 	"html"
 	"utf8"
 	"log"
+	"regexp"
+	"strings"
 	stfl "github.com/akrennmair/go-stfl"
 	goconf "goconf.googlecode.com/hg"
 )
@@ -19,6 +21,8 @@ type UserInterface struct {
 	cmdchan               chan TwitterCommand
 	lookupchan            chan TweetRequest
 	in_reply_to_status_id int64
+	cfg                   *goconf.ConfigFile
+	highlight_rx          []*regexp.Regexp
 }
 
 type ActionId int
@@ -45,9 +49,9 @@ func NewUserInterface(cc chan TwitterCommand, tc chan []*Tweet, lc chan TweetReq
     @style_normal:bg=blue,fg=white,attr=bold
     label text[program]:"" .expand:h
   vbox
-    @style_1_normal:fg=yellow,bg=red,attr=bold
     .expand:vh
     list[tweets]
+      ** just a place holder to be filled by constructTweetList()
       style_focus[listfocus]:fg=yellow,bg=blue,attr=bold
       .expand:vh
       pos[tweetpos]:0
@@ -66,10 +70,61 @@ func NewUserInterface(cc chan TwitterCommand, tc chan []*Tweet, lc chan TweetReq
 		cmdchan:               cc,
 		in_reply_to_status_id: 0,
 		lookupchan:            lc,
+		cfg:                   cfg,
+		highlight_rx:          []*regexp.Regexp{},
 	}
+	ui.constructTweetList()
 	ui.form.Set("program", PROGRAM_NAME + " " + PROGRAM_VERSION)
 	return ui
 }
+
+func (ui *UserInterface) constructTweetList() {
+	buf := bytes.NewBufferString("{list[tweets] style_focus[listfocus]:fg=yellow,bg=blue,attr=bold .expand:vh pos[tweetpos]:0 pos_name[status_id]: ")
+
+	log.Printf("constructing actual tweet list")
+
+	count := 0
+
+	if ui.cfg != nil {
+		for _, section := range ui.cfg.GetSections() {
+			if !strings.HasPrefix(section, "highlight") {
+				continue
+			}
+
+			attr_str, err := ui.cfg.GetString(section, "attributes")
+			if err != nil {
+				continue
+			}
+
+			rx, err := ui.cfg.GetString(section, "regex")
+			if err != nil {
+				continue
+			}
+
+			if rx[0:1] == "/" && rx[len(rx)-1:] == "/" {
+				rx = rx[1:len(rx)-1]
+			}
+
+			compiled_rx, err := regexp.Compile(rx)
+
+			if err != nil {
+				log.Printf("regex %s failed to compile: %v", rx, err)
+			}
+
+			ui.highlight_rx = append(ui.highlight_rx, compiled_rx)
+
+			log.Printf("configured regex '%s' with attributes %s at position %d", rx, attr_str, count)
+
+			buf.WriteString(fmt.Sprintf("@style_%d_normal:%s @style_%d_focus:%s ", count, attr_str, count, attr_str))
+
+			count++
+		}
+	}
+
+	buf.WriteString(" richtext:1}")
+	ui.form.Modify("tweets", "replace", string(buf.Bytes()))
+}
+
 
 func (ui *UserInterface) GetActionChannel() chan UserInterfaceAction {
 	return ui.actionchan
@@ -79,7 +134,7 @@ func (ui *UserInterface) Run() {
 	for {
 		select {
 		case newtweets := <-ui.tweetchan:
-			str := formatTweets(newtweets)
+			str := ui.formatTweets(newtweets)
 			ui.form.Modify("tweets", "insert_inner", str)
 			ui.IncrementPosition(len(newtweets))
 			ui.UpdateInfoLine()
@@ -263,16 +318,27 @@ func (ui *UserInterface) SetInputField(prompt, deftext, endevent string) {
 	ui.UpdateRemaining()
 }
 
-func formatTweets(tweets []*Tweet) string {
+func (ui *UserInterface) formatTweets(tweets []*Tweet) string {
 	buf := bytes.NewBufferString("{list")
 
 	for _, t := range tweets {
-		tweetline := fmt.Sprintf("[%16s] %s", "@"+*t.User.Screen_name, *t.Text)
-		buf.WriteString(fmt.Sprintf("{listitem[%d] text:%v}", *t.Id, stfl.Quote(html.UnescapeString(tweetline))))
+		tweetline := fmt.Sprintf("[%16s] %s", "@"+*t.User.Screen_name, html.UnescapeString(*t.Text))
+		tweetline = strings.Replace(tweetline, "<", "<>", -1)
+		tweetline = ui.highlight(tweetline)
+		buf.WriteString(fmt.Sprintf("{listitem[%d] text:%v}", *t.Id, stfl.Quote(tweetline)))
 	}
 
 	buf.WriteString("}")
 	return string(buf.Bytes())
+}
+
+func (ui *UserInterface) highlight(str string) string {
+	for idx, rx := range ui.highlight_rx {
+		str = rx.ReplaceAllStringFunc(str, func(s string) string {
+			return fmt.Sprintf("<%d>%s</>",idx, s)
+		})
+	}
+	return str
 }
 
 func (ui *UserInterface) IncrementPosition(size int) {
