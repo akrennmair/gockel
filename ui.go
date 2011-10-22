@@ -134,8 +134,7 @@ func (ui *UserInterface) Run() {
 	for {
 		select {
 		case newtweets := <-ui.tweetchan:
-			str := ui.formatTweets(newtweets)
-			ui.form.Modify("tweets", "insert_inner", str)
+			ui.addTweets(newtweets)
 			ui.IncrementPosition(len(newtweets))
 			ui.UpdateInfoLine()
 			ui.form.Run(-1)
@@ -318,7 +317,7 @@ func (ui *UserInterface) SetInputField(prompt, deftext, endevent string) {
 	ui.UpdateRemaining()
 }
 
-func (ui *UserInterface) formatTweets(tweets []*Tweet) string {
+func (ui *UserInterface) addTweets(tweets []*Tweet) {
 	buf := bytes.NewBufferString("{list")
 
 	for _, t := range tweets {
@@ -329,7 +328,7 @@ func (ui *UserInterface) formatTweets(tweets []*Tweet) string {
 	}
 
 	buf.WriteString("}")
-	return string(buf.Bytes())
+	ui.form.Modify("tweets", "insert_inner", string(buf.Bytes()))
 }
 
 func (ui *UserInterface) highlight(str string) string {
