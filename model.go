@@ -1,5 +1,9 @@
 package main
 
+import (
+	goconf "goconf.googlecode.com/hg"
+)
+
 type Model struct {
 	cmdchan       chan TwitterCommand
 	newtweetchan  chan []*Tweet
@@ -31,7 +35,7 @@ type TwitterCommand struct {
 	Data Tweet
 }
 
-func NewModel(t *TwitterAPI, cc chan TwitterCommand, ntc chan []*Tweet, lc chan TweetRequest, uac chan UserInterfaceAction) *Model {
+func NewModel(t *TwitterAPI, cc chan TwitterCommand, ntc chan []*Tweet, lc chan TweetRequest, uac chan UserInterfaceAction, cfg *goconf.ConfigFile) *Model {
 	model := &Model{
 		cmdchan:       cc,
 		newtweetchan:  ntc,

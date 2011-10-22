@@ -2,6 +2,7 @@ package main
 
 import (
 	oauth "github.com/akrennmair/goauth"
+	goconf "goconf.googlecode.com/hg"
 	"json"
 	"os"
 	"io/ioutil"
@@ -111,7 +112,7 @@ type TwitterAPI struct {
 	ratelimit_reset int64
 }
 
-func NewTwitterAPI(consumer_key, consumer_secret string) *TwitterAPI {
+func NewTwitterAPI(consumer_key, consumer_secret string, cfg *goconf.ConfigFile) *TwitterAPI {
 	tapi := &TwitterAPI{
 		authcon: &oauth.OAuthConsumer{
 			Service:          "twitter",

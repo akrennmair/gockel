@@ -9,6 +9,7 @@ import (
 	"utf8"
 	"log"
 	stfl "github.com/akrennmair/go-stfl"
+	goconf "goconf.googlecode.com/hg"
 )
 
 type UserInterface struct {
@@ -35,7 +36,7 @@ type UserInterfaceAction struct {
 	Args   []string
 }
 
-func NewUserInterface(cc chan TwitterCommand, tc chan []*Tweet, lc chan TweetRequest, uac chan UserInterfaceAction) *UserInterface {
+func NewUserInterface(cc chan TwitterCommand, tc chan []*Tweet, lc chan TweetRequest, uac chan UserInterfaceAction, cfg *goconf.ConfigFile) *UserInterface {
 	stfl.Init()
 	ui := &UserInterface{
 		form:                  stfl.Create("<ui.stfl>"),

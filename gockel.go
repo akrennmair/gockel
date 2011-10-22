@@ -3,11 +3,13 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/user"
 	"json"
 	"io/ioutil"
 	"flag"
 	"log"
 	oauth "github.com/akrennmair/goauth"
+	goconf "goconf.googlecode.com/hg"
 )
 
 const (
@@ -23,7 +25,19 @@ func (w *DevNullWriter) Write(b []byte) (n int, err os.Error) {
 }
 
 func main() {
+	homedir := getHomeDir()
+	if homedir == "" {
+		fmt.Printf("Error: unable to determine home directory!\n")
+		return
+	}
+
+	cfgdir := homedir + "/.gockel"
+	os.Mkdir(cfgdir, 0700)
+
+	cfgfilename := cfgdir + "/gockelrc"
+
 	var logfile *string = flag.String("log", "", "logfile")
+	var cfgfile *string = flag.String("config", cfgfilename, "configuration file")
 
 	flag.Parse()
 
@@ -40,12 +54,16 @@ func main() {
 		}
 	}
 
+	cfg, err := goconf.ReadConfigFile(*cfgfile)
+	if err != nil {
+		log.Printf("reading configuration file failed: %v", err)
+	}
 
-	tapi := NewTwitterAPI("sDggzGbHbyAfl5fJ87XOCA", "MOCQDL7ot7qIxMwYL5x1mMAqiYBYxNTxPWS6tc6hw")
+	tapi := NewTwitterAPI("sDggzGbHbyAfl5fJ87XOCA", "MOCQDL7ot7qIxMwYL5x1mMAqiYBYxNTxPWS6tc6hw", cfg)
 
-	at, aterr := LoadAccessToken()
+	at, err := LoadAccessToken(cfgdir)
 
-	if aterr == nil {
+	if err == nil {
 		tapi.SetAccessToken(at)
 	} else {
 		auth_url, err := tapi.GetRequestAuthorizationURL()
@@ -61,7 +79,7 @@ func main() {
 
 		tapi.SetPIN(pin)
 
-		if saveerr := SaveAccessToken(tapi.GetAccessToken()); saveerr != nil {
+		if saveerr := SaveAccessToken(tapi.GetAccessToken(), cfgdir); saveerr != nil {
 			fmt.Printf("saving access token failed: %s\n", saveerr.String())
 			return
 		}
@@ -72,22 +90,22 @@ func main() {
 	lookupchan := make(chan TweetRequest, 1)
 	uiactionchan := make(chan UserInterfaceAction, 10)
 
-	model := NewModel(tapi, cmdchan, newtweetchan, lookupchan, uiactionchan)
+	model := NewModel(tapi, cmdchan, newtweetchan, lookupchan, uiactionchan, cfg)
 	go model.Run()
 
-	ui := NewUserInterface(cmdchan, newtweetchan, lookupchan, uiactionchan)
+	ui := NewUserInterface(cmdchan, newtweetchan, lookupchan, uiactionchan, cfg)
 	go ui.Run()
 
 	ui.InputLoop()
 }
 
-func SaveAccessToken(at *oauth.AccessToken) os.Error {
+func SaveAccessToken(at *oauth.AccessToken, cfgdir string) os.Error {
 	data, marshalerr := json.Marshal(at)
 	if marshalerr != nil {
 		return marshalerr
 	}
 
-	f, ferr := os.OpenFile("access_token.json", os.O_WRONLY|os.O_CREATE, 0600)
+	f, ferr := os.OpenFile(cfgdir + "/access_token.json", os.O_WRONLY|os.O_CREATE, 0600)
 	if ferr != nil {
 		return ferr
 	}
@@ -101,8 +119,8 @@ func SaveAccessToken(at *oauth.AccessToken) os.Error {
 	return nil
 }
 
-func LoadAccessToken() (*oauth.AccessToken, os.Error) {
-	f, ferr := os.Open("access_token.json")
+func LoadAccessToken(cfgdir string) (*oauth.AccessToken, os.Error) {
+	f, ferr := os.Open(cfgdir + "/access_token.json")
 	if ferr != nil {
 		return nil, ferr
 	}
@@ -121,4 +139,26 @@ func LoadAccessToken() (*oauth.AccessToken, os.Error) {
 	}
 
 	return at, nil
+}
+
+func getHomeDir() string {
+	// first try $HOME
+	homedir := os.Getenv("HOME")
+	if homedir != "" {
+		return homedir
+	}
+
+	// then try to lookup by username from $USER
+	u_name, err := user.Lookup(os.Getenv("USER"))
+	if err == nil {
+		return u_name.HomeDir
+	}
+
+	// then try lookup by uid
+	u_uid, err := user.LookupId(os.Getuid())
+	if err == nil {
+		return u_uid.HomeDir
+	}
+
+	return ""
 }
