@@ -105,6 +105,7 @@ const (
 
 type TwitterAPI struct {
 	authcon         *oauth.OAuthConsumer
+	config          *goconf.ConfigFile
 	access_token    *oauth.AccessToken
 	request_token   *oauth.RequestToken
 	ratelimit_rem   uint
@@ -122,9 +123,15 @@ func NewTwitterAPI(consumer_key, consumer_secret string, cfg *goconf.ConfigFile)
 			ConsumerKey:      consumer_key,
 			ConsumerSecret:   consumer_secret,
 			UserAgent:        PROGRAM_NAME + "/" + PROGRAM_VERSION + " (" + PROGRAM_URL + ")",
-			Timeout:          60e9, // 60 second timeout
+			Timeout:          60e9, // 60 second default timeout
 			CallBackURL:      "oob",
 		},
+		config: cfg,
+	}
+	if tapi.config != nil {
+		if timeout, err := tapi.config.GetInt("default", "http_timeout"); err == nil && timeout > 0 {
+			tapi.authcon.Timeout = int64(timeout) * 1e9
+		}
 	}
 	return tapi
 }
