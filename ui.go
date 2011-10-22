@@ -44,23 +44,22 @@ func NewUserInterface(cc chan TwitterCommand, tc chan []*Tweet, lc chan TweetReq
 	stfl.Init()
 	ui := &UserInterface{
 		form:                  stfl.Create(`vbox[root]
-  hbox
-    .expand:0
-    @style_normal:bg=blue,fg=white,attr=bold
-    label text[program]:"" .expand:h
   vbox
     .expand:vh
     list[tweets]
       ** just a place holder to be filled by constructTweetList()
-      style_focus[listfocus]:fg=yellow,bg=blue,attr=bold
+      style_focus[style_listfocus]:fg=yellow,bg=blue,attr=bold
       .expand:vh
       pos[tweetpos]:0
       pos_name[status_id]:
   vbox
     .expand:0
     .display:1
-    label text[infoline]:">> " .expand:h style_normal:bg=blue,fg=yellow,attr=bold
-    label text[shorthelp]:"q:Quit ENTER:New Tweet ^R:Retweet r:Reply ^F:Favorite ^O:Shorten URL" .expand:h style_normal:bg=blue,fg=white,attr=bold
+    hbox
+      @style_normal[style_infotext]:bg=blue,fg=yellow,attr=bold
+      label text[infoline]:">> " .expand:h
+      label text[program]:"" .expand:0
+    label text[shorthelp]:"q:Quit ENTER:New Tweet ^R:Retweet r:Reply ^F:Favorite ^O:Shorten URL" .expand:h style_normal[style_shorthelp]:bg=blue,fg=white,attr=bold
   hbox[lastline]
     .expand:0
     label text[msg]:"" .expand:h
@@ -79,7 +78,7 @@ func NewUserInterface(cc chan TwitterCommand, tc chan []*Tweet, lc chan TweetReq
 }
 
 func (ui *UserInterface) constructTweetList() {
-	buf := bytes.NewBufferString("{list[tweets] style_focus[listfocus]:fg=yellow,bg=blue,attr=bold .expand:vh pos[tweetpos]:0 pos_name[status_id]: ")
+	buf := bytes.NewBufferString("{list[tweets] style_focus[style_listfocus]:fg=yellow,bg=blue,attr=bold .expand:vh pos[tweetpos]:0 pos_name[status_id]: ")
 
 	log.Printf("constructing actual tweet list")
 
