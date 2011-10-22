@@ -310,9 +310,12 @@ func (ui *UserInterface) InputLoop() {
 }
 
 func (ui *UserInterface) SetInputField(prompt, deftext, endevent string) {
-	last_line_text := "{hbox[lastline] .expand:0 {label .tie:r .expand:0 text[remaining]:\"\" style_normal[remaining_style]:fg=white}{label .expand:0 text:\"| \"}{label .expand:0 text[prompt]:" + stfl.Quote(prompt) + "}{!input[tweetinput] on_ESC:cancel-input on_ENTER:" + endevent + " modal:1 .expand:h text[inputfield]:" + stfl.Quote(deftext) + " pos[inputpos]:" + strconv.Itoa(utf8.RuneCountInString(deftext)) + "}}"
+	pos := strconv.Itoa(utf8.RuneCountInString(deftext))
+	last_line_text := "{hbox[lastline] .expand:0 {label .tie:r .expand:0 text[remaining]:\"\" style_normal[remaining_style]:fg=white}{label .expand:0 text:\"| \"}{label .expand:0 text[prompt]:" + stfl.Quote(prompt) + "}{!input[tweetinput] on_ESC:cancel-input on_ENTER:" + endevent + " modal:1 .expand:h text[inputfield]:" + stfl.Quote(deftext) + " pos[inputpos]:0 offset:0}}"
 
 	ui.form.Modify("lastline", "replace", last_line_text)
+	ui.form.Run(-1)
+	ui.form.Set("inputpos", pos)
 	//ui.form.SetFocus("tweetinput")
 	ui.UpdateRemaining()
 }
