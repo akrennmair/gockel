@@ -71,7 +71,7 @@ func NewUserInterface(cc chan TwitterCommand, tc chan []*Tweet, lc chan TweetReq
 	}
 	ui.constructTweetList()
 	ui.setColors()
-	ui.form.Set("program", PROGRAM_NAME + " " + PROGRAM_VERSION)
+	ui.form.Set("program", " " + PROGRAM_NAME + " " + PROGRAM_VERSION)
 	return ui
 }
 
