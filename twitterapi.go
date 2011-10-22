@@ -533,7 +533,6 @@ func(tapi *TwitterAPI) doUserStream(tweetchan chan []*Tweet, actions chan UserIn
 		if len(line) == 0 {
 			continue
 		}
-		log.Printf("data: %s", string(line))
 
 		if bytes.HasPrefix(line, []byte("{\"delete\":")) {
 			action := &TwitterEvent{}
