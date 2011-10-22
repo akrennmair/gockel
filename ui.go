@@ -48,10 +48,6 @@ func NewUserInterface(cc chan TwitterCommand, tc chan []*Tweet, lc chan TweetReq
     .expand:vh
     list[tweets]
       ** just a place holder to be filled by constructTweetList()
-      style_focus[style_listfocus]:fg=yellow,bg=blue,attr=bold
-      .expand:vh
-      pos[tweetpos]:0
-      pos_name[status_id]:
   vbox
     .expand:0
     .display:1
@@ -73,12 +69,26 @@ func NewUserInterface(cc chan TwitterCommand, tc chan []*Tweet, lc chan TweetReq
 		highlight_rx:          []*regexp.Regexp{},
 	}
 	ui.constructTweetList()
+	ui.setColors()
 	ui.form.Set("program", PROGRAM_NAME + " " + PROGRAM_VERSION)
 	return ui
 }
 
+func (ui *UserInterface) setColors() {
+	if ui.cfg == nil {
+		return
+	}
+
+	for _, elem := range []string{ "shorthelp", "infotext", "listfocus", "listnormal" } {
+		if value, err := ui.cfg.GetString("colors", elem); err == nil && value != "" {
+			// TODO: check whether value is syntactically valid
+			ui.form.Set("style_" + elem, value)
+		}
+	}
+}
+
 func (ui *UserInterface) constructTweetList() {
-	buf := bytes.NewBufferString("{list[tweets] style_focus[style_listfocus]:fg=yellow,bg=blue,attr=bold .expand:vh pos[tweetpos]:0 pos_name[status_id]: ")
+	buf := bytes.NewBufferString("{list[tweets] style_focus[style_listfocus]:fg=yellow,bg=blue,attr=bold style_normal[style_listnormal]: .expand:vh pos[tweetpos]:0 pos_name[status_id]: ")
 
 	log.Printf("constructing actual tweet list")
 
