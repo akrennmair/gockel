@@ -2,7 +2,6 @@ TODO list for gockel
 ====================
 
 - write more tests
-- write documentation
 
 done items:
 ===========
@@ -16,3 +15,4 @@ done items:
 - put configuration and access tokens in ~/.gockel/
 - replace newlines with spaces in tweet renderer
 - make colors of UI configurable
+- write documentation
