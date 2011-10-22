@@ -14,7 +14,7 @@ import (
 
 const (
 	PROGRAM_NAME = "gockel"
-	PROGRAM_VERSION = "0.0"
+	PROGRAM_VERSION = "0.1"
 	PROGRAM_URL = "https://github.com/akrennmair/gockel"
 )
 
