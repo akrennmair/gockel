@@ -2,10 +2,10 @@ TODO list for gockel
 ====================
 
 - write more tests
-- multi-account support
 
 done items:
 ===========
+- multi-account support
 - add follow/unfollow
 - implement user stream API support
 - properly move selection when a tweet gets deleted
