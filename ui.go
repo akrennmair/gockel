@@ -17,9 +17,9 @@ import (
 type UserInterface struct {
 	form                  *stfl.Form
 	actionchan            chan UserInterfaceAction
-	tweetchan             chan []*Tweet
-	cmdchan               chan TwitterCommand
-	lookupchan            chan TweetRequest
+	tweetchan             <-chan []*Tweet
+	cmdchan               chan<- TwitterCommand
+	lookupchan            chan<- TweetRequest
 	in_reply_to_status_id int64
 	cfg                   *goconf.ConfigFile
 	highlight_rx          []*regexp.Regexp
@@ -43,7 +43,7 @@ type UserInterfaceAction struct {
 	Args   []string
 }
 
-func NewUserInterface(cc chan TwitterCommand, tc chan []*Tweet, lc chan TweetRequest, uac chan UserInterfaceAction, cfg *goconf.ConfigFile) *UserInterface {
+func NewUserInterface(cc chan<- TwitterCommand, tc <-chan []*Tweet, lc chan<- TweetRequest, uac chan UserInterfaceAction, cfg *goconf.ConfigFile) *UserInterface {
 	stfl.Init()
 	ui := &UserInterface{
 		form:                  stfl.Create(`vbox[root]
@@ -152,6 +152,7 @@ func (ui *UserInterface) Run() {
 	for {
 		select {
 		case newtweets := <-ui.tweetchan:
+			log.Printf("received %d tweets", len(newtweets))
 			ui.addTweets(newtweets)
 			ui.IncrementPosition(len(newtweets))
 			ui.UpdateInfoLine()

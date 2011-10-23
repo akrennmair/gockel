@@ -15,8 +15,8 @@ type Model struct {
 	cur_user      uint
 	tweets        []*Tweet
 	tweet_map     map[int64]*Tweet
-	lookupchan    chan TweetRequest
-	uiactionchan  chan UserInterfaceAction
+	lookupchan    <-chan TweetRequest
+	uiactionchan  chan<- UserInterfaceAction
 	last_id       int64
 }
 
@@ -43,7 +43,7 @@ type TwitterCommand struct {
 	Pos uint // for SET_CURUSER
 }
 
-func NewModel(users []UserTwitterAPITuple, cc chan TwitterCommand, ntc chan<- []*Tweet, lc chan TweetRequest, uac chan UserInterfaceAction, cfg *goconf.ConfigFile) *Model {
+func NewModel(users []UserTwitterAPITuple, cc chan TwitterCommand, ntc chan<- []*Tweet, lc <-chan TweetRequest, uac chan<- UserInterfaceAction, cfg *goconf.ConfigFile) *Model {
 	model := &Model{
 		cmdchan:       cc,
 		newtweetchan:  ntc,
@@ -105,7 +105,10 @@ func (m *Model) Run() {
 				}
 				m.tweets = append(unique_tweets, m.tweets...)
 			}
-			m.newtweetchan <- unique_tweets
+			log.Printf("received %d tweets (%d unique)", len(tweets), len(unique_tweets))
+			if len(unique_tweets) > 0 {
+				m.newtweetchan <- unique_tweets
+			}
 		}
 	}
 }
