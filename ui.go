@@ -262,7 +262,7 @@ func (ui *UserInterface) UpdateInfoLine() {
 func (ui *UserInterface) HandleRawInput(input string) {
 	switch input {
 	case "ENTER":
-		ui.SetInputField("Tweet: ", "", "end-input")
+		ui.SetInputField("Tweet: ", "", "end-input", true)
 	case "r":
 		var err os.Error
 		ui.in_reply_to_status_id, err = strconv.Atoi64(ui.form.Get("status_id"))
@@ -273,7 +273,7 @@ func (ui *UserInterface) HandleRawInput(input string) {
 		}
 		tweet := ui.LookupTweet(ui.in_reply_to_status_id)
 		if tweet != nil {
-			ui.SetInputField("Reply: ", "@"+*tweet.User.Screen_name+" ","end-input")
+			ui.SetInputField("Reply: ", "@"+*tweet.User.Screen_name+" ","end-input", true)
 		} else {
 			log.Printf("tweet lookup for %d failed\n", ui.in_reply_to_status_id)
 			ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Error: tweet lookup by status ID failed! (BUG?)"}}
@@ -307,7 +307,7 @@ func (ui *UserInterface) HandleRawInput(input string) {
 			ui.form.Set("inputfield", text)
 		}
 	case "F":
-		ui.SetInputField("Follow: ", "", "end-input-follow")
+		ui.SetInputField("Follow: ", "", "end-input-follow", false)
 	case "end-input-follow":
 		screen_name := new(string)
 		*screen_name = ui.form.Get("inputfield")
@@ -378,14 +378,23 @@ func (ui *UserInterface) InputLoop() {
 	stfl.Reset()
 }
 
-func (ui *UserInterface) SetInputField(prompt, deftext, endevent string) {
+func (ui *UserInterface) SetInputField(prompt, deftext, endevent string, show_rem bool) {
 	pos := strconv.Itoa(utf8.RuneCountInString(deftext))
-	last_line_text := "{hbox[lastline] @style_normal[style_input]: .expand:0 {label .tie:r .expand:0 text[remaining]:\"\" style_normal[remaining_style]:fg=white}{label .expand:0 text:\"| \"}{label .expand:0 text[prompt]:" + stfl.Quote(prompt) + "}{!input[tweetinput] on_ESC:cancel-input on_ENTER:" + endevent + " modal:1 .expand:h text[inputfield]:" + stfl.Quote(deftext) + " pos[inputpos]:0 offset:0}}"
+	buf := bytes.NewBufferString("{hbox[lastline] @style_normal[style_input]: .expand:0 ")
+	if show_rem {
+		buf.WriteString("{label .tie:r .expand:0 text[remaining]:\"\" style_normal[remaining_style]:fg=white}{label .expand:0 text:\"| \"}")
+	}
+	buf.WriteString("{label .expand:0 text[prompt]:")
+	buf.WriteString(stfl.Quote(prompt))
+	buf.WriteString("}{!input[tweetinput] on_ESC:cancel-input on_ENTER:")
+	buf.WriteString(endevent)
+	buf.WriteString(" modal:1 .expand:h text[inputfield]:")
+	buf.WriteString(stfl.Quote(deftext))
+	buf.WriteString(" pos[inputpos]:0 offset:0}}")
 
-	ui.form.Modify("lastline", "replace", last_line_text)
+	ui.form.Modify("lastline", "replace", string(buf.Bytes()))
 	ui.form.Run(-1)
 	ui.form.Set("inputpos", pos)
-	//ui.form.SetFocus("tweetinput")
 	ui.UpdateRemaining()
 }
 
