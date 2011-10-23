@@ -112,6 +112,7 @@ The following user interface elements can be configured color-wise:
 
 ### Example ###
 
+	[colors]
 	shorthelp = fg=white,bg=red
 	infotext = bg=white,fg=red
 	listfocus = fg=white,bg=green,attr=bold
