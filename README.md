@@ -107,6 +107,8 @@ The following user interface elements can be configured color-wise:
 * listnormal: unfocused lines in the tweet list
 * background: general application background
 * input: input field
+* userlist: user list (top line)
+* userlist_active: active selection in user list
 
 ### Example ###
 

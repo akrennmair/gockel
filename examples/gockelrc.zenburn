@@ -5,6 +5,8 @@ infotext = fg=color115,bg=color236
 shorthelp = fg=color223,bg=color237
 background = bg=color237
 input = fg=color188,bg=color237
+userlist = fg=color223,bg=color236
+userlist_active = fg=color116,bg=color237
 
 [highlight_hashtags]
 attributes = fg=color116,bg=color237,attr=bold

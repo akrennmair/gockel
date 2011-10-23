@@ -183,7 +183,7 @@ func StartUserStreams(users []UserTwitterAPITuple, new_tweets chan<- []*Tweet, u
 
 	for i, _ := range users {
 		go func(i int) {
-			if home_tl, err := users[i].Tapi.HomeTimeline(20, 0); err == nil {
+			if home_tl, err := users[i].Tapi.HomeTimeline(50, 0); err == nil {
 				hometl_tweets <-home_tl.Tweets
 			} else {
 				hometl_tweets <-[]*Tweet{}
