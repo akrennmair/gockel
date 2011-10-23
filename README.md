@@ -48,6 +48,7 @@ Currently, the following keystrokes are available:
 * Ctrl-O: shorten all URLs in the current input field
 * F: follow a user (you will be prompted for the username)
 * U: unfollow the publisher user of the currently selected tweet
+* 1..9: select user (for multi-account support, see below)
 
 Configuration
 -------------
@@ -62,6 +63,7 @@ configuration can be found in sections starting with "highlight" (see below).
 Currently, the following configuration options are available:
 
 * http_timeout: default connection timeout for HTTP requests in seconds (default: 60 seconds)
+* default_user: set the user that is selected by default on startup (for multi-account support, see below)
 
 Color Configuration
 -------------------
@@ -131,6 +133,26 @@ files), you can mark start and end of regular expression with forward slashes.
 	[highlight_urls]
 	attributes = fg=green
 	regex = (mailto|ftp|https?):[^ )\]]*
+
+Multiple Accounts
+-----------------
+
+If you need to manage multiple accounts, gockel provides basic support for 
+that. When you start gockel for the first time, you need to authenticate your 
+user. To add more accounts, run "gockel -add" and you will be provided with
+the same workflow to authorize the application. Gockel will save this 
+information in ~/.gockel as files starting with "access_token.json", and 
+usually the associated Twitter username as suffix.
+
+In the application, you can then select the currently active user by pressing 
+the keys 1 to 9. Which user is currently active is displayed in the user list 
+line at the top of the application. When you start gockel, the first user
+that was found is active, but you can influence this by configuring
+
+	default_user = your_preferred_nick
+
+in your ~/.gockel/gockelrc.
+
 
 Contact
 -------
