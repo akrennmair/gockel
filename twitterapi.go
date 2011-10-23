@@ -478,6 +478,37 @@ func (tapi *TwitterAPI) Unfollow(user TwitterUser) os.Error {
 	return nil
 }
 
+func(tapi *TwitterAPI) VerifyCredentials() (*TwitterUser, os.Error) {
+	params := oauth.Params {
+		&oauth.Pair {
+			Key: "skip_status",
+			Value: "true",
+		},
+	}
+
+	resp, err := tapi.authcon.Get("https://api.twitter.com/1/account/verify_credentials.json", params, tapi.access_token)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != 200 {
+		return nil, os.NewError(resp.Status)
+	}
+
+	jsondata, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	user := &TwitterUser{}
+
+	if err := json.Unmarshal(jsondata, user); err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
 func (tapi *TwitterAPI) get_timeline(tl_name string, p ...*oauth.Pair) (*Timeline, os.Error) {
 	jsondata, err := tapi.get_statuses(tl_name, p...)
 	if err != nil {
