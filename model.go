@@ -4,6 +4,7 @@ import (
 	goconf "goconf.googlecode.com/hg"
 	"strconv"
 	"log"
+	"sort"
 )
 
 type Model struct {
@@ -79,18 +80,7 @@ func (m *Model) Run() {
 
 	new_tweets := make(chan []*Tweet, 10)
 
-	// pre-fill with 50 latest items from home timeline
-	// TODO: move this to StartUserStreams, including merge, sort and deduplication
-	/*
-	if home_tl, err := m.users[m.cur_user].Tapi.HomeTimeline(50, 0); err == nil {
-		if len(home_tl.Tweets) > 0 {
-			new_tweets <-home_tl.Tweets
-		}
-	}
-	*/
-
-	// then start userstream
-	StartUserStreams(m.users, new_tweets, m.uiactionchan)
+	go StartUserStreams(m.users, new_tweets, m.uiactionchan)
 
 	for {
 		select {
@@ -170,7 +160,57 @@ func (m *Model) HandleCommand(cmd TwitterCommand) {
 	}
 }
 
+type TweetPtrSlice []*Tweet
+
+func (s TweetPtrSlice) Len() int {
+	return len(s)
+}
+
+func (s TweetPtrSlice) Less(i, j int) bool {
+	return *s[j].Id <= *s[i].Id
+}
+
+func (s TweetPtrSlice) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
 func StartUserStreams(users []UserTwitterAPITuple, new_tweets chan<- []*Tweet, uiactions chan<- UserInterfaceAction) {
+	initial_tweets := []*Tweet{}
+	hometl_tweets := make(chan []*Tweet, len(users))
+
+	for i, _ := range users {
+		go func(i int) {
+			if home_tl, err := users[i].Tapi.HomeTimeline(20, 0); err == nil {
+				hometl_tweets <-home_tl.Tweets
+			} else {
+				hometl_tweets <-[]*Tweet{}
+			}
+		}(i)
+	}
+
+	for i:=0;i<len(users);i++ {
+		tweets := <-hometl_tweets
+		initial_tweets = append(initial_tweets, tweets...)
+	}
+
+	sort.Sort(TweetPtrSlice(initial_tweets))
+
+	ids := make(map[string]bool, len(initial_tweets))
+	unique_tweets := []*Tweet{}
+	for _, t := range initial_tweets {
+		if _, present := ids[*t.Id_str]; !present {
+			ids[*t.Id_str] = true
+			unique_tweets = append(unique_tweets, t)
+		}
+	}
+
+	log.Printf("got %d tweets upfront", len(unique_tweets))
+	if len(unique_tweets) > 50 {
+		unique_tweets = unique_tweets[0:50]
+	}
+
+	new_tweets <- unique_tweets
+
 	for _, u := range users {
 		go u.Tapi.UserStream(new_tweets, uiactions)
 	}
