@@ -50,7 +50,7 @@ func NewUserInterface(cc chan<- TwitterCommand, tc <-chan []*Tweet, lc chan<- Tw
   @style_normal[style_background]:
   hbox
     .expand:0
-    label text[userlist]:"" .expand:h style_normal[style_userlist]:bg=white,fg=black richtext:1 style_s_normal[style_userlist_active]:bg=red,fg=white,attr=bold
+    label text[userlist]:"" .expand:h style_normal[style_userlist]:bg=blue,fg=yellow richtext:1 style_s_normal[style_userlist_active]:bg=yellow,fg=blue,attr=bold
   vbox
     .expand:vh
     list[tweets]
