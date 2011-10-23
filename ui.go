@@ -275,6 +275,26 @@ func (ui *UserInterface) HandleRawInput(input string) {
 			text = FindURLs(text, ShortenURL)
 			ui.form.Set("inputfield", text)
 		}
+	case "F":
+		ui.SetInputField("Follow: ", "", "end-input-follow")
+	case "end-input-follow":
+		screen_name := new(string)
+		*screen_name = ui.form.Get("inputfield")
+		data := Tweet{
+			User: &TwitterUser{
+				Screen_name: screen_name,
+			},
+		}
+		ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Following " + *screen_name + "..."}}
+		ui.cmdchan <- TwitterCommand{Cmd: FOLLOW, Data: data}
+		ui.ResetLastLine()
+	case "U":
+		if status_id, err := strconv.Atoi64(ui.form.Get("status_id")); err == nil {
+			if tweet := ui.LookupTweet(status_id); tweet != nil {
+				ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Unfollowing " + *tweet.User.Screen_name + "..."}}
+				ui.cmdchan <- TwitterCommand{Cmd: UNFOLLOW, Data: *tweet}
+			}
+		}
 	case "end-input":
 		tweet_text := new(string)
 		*tweet_text = ui.form.Get("inputfield")

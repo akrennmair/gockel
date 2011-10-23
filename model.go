@@ -28,6 +28,8 @@ const (
 	RETWEET
 	DELETE
 	FAVORITE
+	FOLLOW
+	UNFOLLOW
 )
 
 type TwitterCommand struct {
@@ -114,6 +116,22 @@ func (m *Model) HandleCommand(cmd TwitterCommand) {
 				m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{""}}
 			} else {
 				m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{"Favoriting tweet failed: " + err.String()}}
+			}
+		}()
+	case FOLLOW:
+		go func() {
+			if err := m.tapi.Follow(*cmd.Data.User.Screen_name); err == nil {
+				m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{""}}
+			} else {
+				m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{"Following " + *cmd.Data.User.Screen_name + " failed: " + err.String()}}
+			}
+		}()
+	case UNFOLLOW:
+		go func() {
+			if err := m.tapi.Unfollow(*cmd.Data.User); err == nil {
+				m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{""}}
+			} else {
+				m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{"Unfollowing " + *cmd.Data.User.Screen_name + " failed: " + err.String()}}
 			}
 		}()
 	}

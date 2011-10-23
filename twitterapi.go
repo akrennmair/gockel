@@ -436,6 +436,48 @@ func(tapi *TwitterAPI) Favorite(tweet Tweet) os.Error {
 	return nil
 }
 
+func (tapi *TwitterAPI) Follow(screen_name string) os.Error {
+	params := oauth.Params {
+		&oauth.Pair{
+			Key: "screen_name",
+			Value: screen_name,
+		},
+	}
+	resp, err := tapi.authcon.Post("https://api.twitter.com/1/friendships/create.json", params, tapi.access_token)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != 200 {
+		return os.NewError(resp.Status)
+	}
+
+	return nil
+}
+
+func (tapi *TwitterAPI) Unfollow(user TwitterUser) os.Error {
+	params := oauth.Params {
+		&oauth.Pair{
+			Key: "user_id",
+			Value: *user.Id_str,
+		},
+		&oauth.Pair{
+			Key: "screen_name",
+			Value: *user.Screen_name,
+		},
+	}
+	resp, err := tapi.authcon.Post("https://api.twitter.com/1/friendships/destroy.json", params, tapi.access_token)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != 200 {
+		return os.NewError(resp.Status)
+	}
+
+	return nil
+}
+
 func (tapi *TwitterAPI) get_timeline(tl_name string, p ...*oauth.Pair) (*Timeline, os.Error) {
 	jsondata, err := tapi.get_statuses(tl_name, p...)
 	if err != nil {
