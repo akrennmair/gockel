@@ -548,7 +548,7 @@ func (e HTTPError) String() string {
 	return "HTTP code " + strconv.Itoa(int(e))
 }
 
-func(tapi *TwitterAPI) UserStream(tweetchan chan []*Tweet, actions chan UserInterfaceAction) {
+func(tapi *TwitterAPI) UserStream(tweetchan chan<- []*Tweet, actions chan<- UserInterfaceAction) {
 	network_wait := INITIAL_NETWORK_WAIT
 	http_wait := INITIAL_HTTP_WAIT
 	last_network_backoff := time.Seconds()
@@ -582,7 +582,7 @@ func(tapi *TwitterAPI) UserStream(tweetchan chan []*Tweet, actions chan UserInte
 	}
 }
 
-func(tapi *TwitterAPI) doUserStream(tweetchan chan []*Tweet, actions chan UserInterfaceAction) os.Error {
+func(tapi *TwitterAPI) doUserStream(tweetchan chan<- []*Tweet, actions chan<- UserInterfaceAction) os.Error {
 	resp, err := tapi.authcon.Get("https://userstream.twitter.com/2/user.json", oauth.Params{}, tapi.access_token)
 	if err != nil {
 		return err

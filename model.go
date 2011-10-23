@@ -2,13 +2,16 @@ package main
 
 import (
 	goconf "goconf.googlecode.com/hg"
+	"strconv"
+	"log"
 )
 
 type Model struct {
-	cmdchan       chan TwitterCommand
-	newtweetchan  chan []*Tweet
+	cmdchan       <-chan TwitterCommand
+	newtweetchan  chan<- []*Tweet
 	newtweets_int chan []*Tweet
-	tapi          *TwitterAPI
+	users         []UserTwitterAPITuple
+	cur_user      uint
 	tweets        []*Tweet
 	tweet_map     map[int64]*Tweet
 	lookupchan    chan TweetRequest
@@ -30,23 +33,43 @@ const (
 	FAVORITE
 	FOLLOW
 	UNFOLLOW
+	SET_CURUSER
 )
 
 type TwitterCommand struct {
 	Cmd CmdId
 	Data Tweet
+	Pos uint // for SET_CURUSER
 }
 
-func NewModel(t *TwitterAPI, cc chan TwitterCommand, ntc chan []*Tweet, lc chan TweetRequest, uac chan UserInterfaceAction, cfg *goconf.ConfigFile) *Model {
+func NewModel(users []UserTwitterAPITuple, cc chan TwitterCommand, ntc chan<- []*Tweet, lc chan TweetRequest, uac chan UserInterfaceAction, cfg *goconf.ConfigFile) *Model {
 	model := &Model{
 		cmdchan:       cc,
 		newtweetchan:  ntc,
 		newtweets_int: make(chan []*Tweet, 10),
-		tapi:          t,
+		users:         users,
+		cur_user:      0,
 		lookupchan:    lc,
 		tweet_map:     map[int64]*Tweet{},
 		uiactionchan:  uac,
 	}
+
+	if cfg != nil {
+		if default_user, err := cfg.GetString("default", "default_user"); err == nil {
+			for idx, _ := range model.users {
+				if model.users[idx].User == default_user {
+					model.cur_user = uint(idx)
+					break
+				}
+			}
+		}
+	}
+
+	userlist := []string{ strconv.Uitoa(model.cur_user) }
+	for _, u := range model.users {
+		userlist = append(userlist, u.User)
+	}
+	model.uiactionchan <- UserInterfaceAction{SET_USERLIST, userlist}
 
 	return model
 }
@@ -57,14 +80,17 @@ func (m *Model) Run() {
 	new_tweets := make(chan []*Tweet, 10)
 
 	// pre-fill with 50 latest items from home timeline
-	if home_tl, err := m.tapi.HomeTimeline(50, 0); err == nil {
+	// TODO: move this to StartUserStreams, including merge, sort and deduplication
+	/*
+	if home_tl, err := m.users[m.cur_user].Tapi.HomeTimeline(50, 0); err == nil {
 		if len(home_tl.Tweets) > 0 {
 			new_tweets <-home_tl.Tweets
 		}
 	}
+	*/
 
 	// then start userstream
-	go m.tapi.UserStream(new_tweets, m.uiactionchan)
+	StartUserStreams(m.users, new_tweets, m.uiactionchan)
 
 	for {
 		select {
@@ -80,11 +106,16 @@ func (m *Model) Run() {
 			}
 			m.tweets = append(tweets, m.tweets...)
 		case tweets := <-new_tweets:
+			log.Printf("received %d tweets", len(tweets))
+			unique_tweets := []*Tweet{}
 			for _, t := range tweets {
-				m.tweet_map[*t.Id] = t
+				if _, contained := m.tweet_map[*t.Id]; !contained {
+					m.tweet_map[*t.Id] = t
+					unique_tweets = append(unique_tweets, t)
+				}
+				m.tweets = append(unique_tweets, m.tweets...)
 			}
-			m.tweets = append(tweets, m.tweets...)
-			m.newtweetchan <- tweets
+			m.newtweetchan <- unique_tweets
 		}
 	}
 }
@@ -93,47 +124,54 @@ func (m *Model) Run() {
 func (m *Model) HandleCommand(cmd TwitterCommand) {
 	switch cmd.Cmd {
 	case UPDATE:
-		go func() {
-			if newtweet, err := m.tapi.Update(cmd.Data); err == nil {
+		go func(cur_user uint) {
+			if newtweet, err := m.users[cur_user].Tapi.Update(cmd.Data); err == nil {
 				m.newtweets_int <- []*Tweet{newtweet}
 				m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{""}}
 			} else {
 				m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{"Posting tweet failed: " + err.String()}}
 			}
-		}()
+		}(m.cur_user)
 	case RETWEET:
-		go func() {
-			if newtweet, err := m.tapi.Retweet(cmd.Data); err == nil {
+		go func(cur_user uint) {
+			if newtweet, err := m.users[cur_user].Tapi.Retweet(cmd.Data); err == nil {
 				m.newtweets_int <- []*Tweet{newtweet}
 				m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{""}}
 			} else {
 				m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{"Retweeting failed:" + err.String()}}
 			}
-		}()
+		}(m.cur_user)
 	case FAVORITE:
-		go func() {
-			if err := m.tapi.Favorite(cmd.Data); err == nil {
+		go func(cur_user uint) {
+			if err := m.users[cur_user].Tapi.Favorite(cmd.Data); err == nil {
 				m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{""}}
 			} else {
 				m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{"Favoriting tweet failed: " + err.String()}}
 			}
-		}()
+		}(m.cur_user)
 	case FOLLOW:
-		go func() {
-			if err := m.tapi.Follow(*cmd.Data.User.Screen_name); err == nil {
+		go func(cur_user uint) {
+			if err := m.users[cur_user].Tapi.Follow(*cmd.Data.User.Screen_name); err == nil {
 				m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{""}}
 			} else {
 				m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{"Following " + *cmd.Data.User.Screen_name + " failed: " + err.String()}}
 			}
-		}()
+		}(m.cur_user)
 	case UNFOLLOW:
-		go func() {
-			if err := m.tapi.Unfollow(*cmd.Data.User); err == nil {
+		go func(cur_user uint) {
+			if err := m.users[cur_user].Tapi.Unfollow(*cmd.Data.User); err == nil {
 				m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{""}}
 			} else {
 				m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{"Unfollowing " + *cmd.Data.User.Screen_name + " failed: " + err.String()}}
 			}
-		}()
+		}(m.cur_user)
+	case SET_CURUSER:
+		m.cur_user = cmd.Pos
 	}
 }
 
+func StartUserStreams(users []UserTwitterAPITuple, new_tweets chan<- []*Tweet, uiactions chan<- UserInterfaceAction) {
+	for _, u := range users {
+		go u.Tapi.UserStream(new_tweets, uiactions)
+	}
+}

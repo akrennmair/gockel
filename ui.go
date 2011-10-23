@@ -23,6 +23,8 @@ type UserInterface struct {
 	in_reply_to_status_id int64
 	cfg                   *goconf.ConfigFile
 	highlight_rx          []*regexp.Regexp
+	users                 []string
+	cur_user              uint
 }
 
 type ActionId int
@@ -33,6 +35,7 @@ const (
 	DELETE_TWEET
 	SHOW_MSG
 	KEY_PRESS
+	SET_USERLIST
 )
 
 type UserInterfaceAction struct {
@@ -45,6 +48,9 @@ func NewUserInterface(cc chan TwitterCommand, tc chan []*Tweet, lc chan TweetReq
 	ui := &UserInterface{
 		form:                  stfl.Create(`vbox[root]
   @style_normal[style_background]:
+  hbox
+    .expand:0
+    label text[userlist]:"" .expand:h style_normal[style_userlist]:bg=white,fg=black richtext:1 style_s_normal[style_userlist_active]:bg=red,fg=white,attr=bold
   vbox
     .expand:vh
     list[tweets]
@@ -68,6 +74,8 @@ func NewUserInterface(cc chan TwitterCommand, tc chan []*Tweet, lc chan TweetReq
 		lookupchan:            lc,
 		cfg:                   cfg,
 		highlight_rx:          []*regexp.Regexp{},
+		users:                 []string{},
+		cur_user:              0,
 	}
 	ui.constructTweetList()
 	ui.setColors()
@@ -80,7 +88,7 @@ func (ui *UserInterface) setColors() {
 		return
 	}
 
-	for _, elem := range []string{ "shorthelp", "infotext", "listfocus", "listnormal", "background", "input" } {
+	for _, elem := range []string{ "shorthelp", "infotext", "listfocus", "listnormal", "background", "input", "userlist", "userlist_active" } {
 		if value, err := ui.cfg.GetString("colors", elem); err == nil && value != "" {
 			// TODO: check whether value is syntactically valid
 			ui.form.Set("style_" + elem, value)
@@ -178,7 +186,29 @@ func (ui *UserInterface) HandleAction(action UserInterfaceAction) {
 		ui.UpdateRemaining()
 		ui.form.Set("msg", "")
 		ui.form.Run(-1)
+	case SET_USERLIST:
+		ui.cur_user, _ = strconv.Atoui(action.Args[0])
+		ui.users = action.Args[1:]
+		ui.UpdateUserList()
+		ui.form.Run(-1)
 	}
+}
+
+func (ui *UserInterface) UpdateUserList() {
+	buf := bytes.NewBufferString("")
+
+	for i, u := range ui.users {
+		if i == int(ui.cur_user) {
+			buf.WriteString("<s>")
+		}
+		buf.WriteString(fmt.Sprintf("%d:%s", i+1, strings.Replace(u, "<", "<>", -1)))
+		if i == int(ui.cur_user) {
+			buf.WriteString("*</>")
+		}
+		buf.WriteString(" ")
+	}
+
+	ui.form.Set("userlist", string(buf.Bytes()))
 }
 
 func (ui *UserInterface) ResetLastLine() {
@@ -294,6 +324,14 @@ func (ui *UserInterface) HandleRawInput(input string) {
 				ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Unfollowing " + *tweet.User.Screen_name + "..."}}
 				ui.cmdchan <- TwitterCommand{Cmd: UNFOLLOW, Data: *tweet}
 			}
+		}
+	case "1", "2", "3", "4", "5", "6", "7", "8", "9":
+		pos, _ := strconv.Atoi(input)
+		pos -= 1
+		if pos < len(ui.users) {
+			ui.cmdchan <- TwitterCommand{Cmd: SET_CURUSER, Pos: uint(pos)}
+			ui.cur_user = uint(pos)
+			ui.UpdateUserList()
 		}
 	case "end-input":
 		tweet_text := new(string)

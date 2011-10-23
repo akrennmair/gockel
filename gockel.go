@@ -93,12 +93,17 @@ func main() {
 		}
 	}
 
+	log.Printf("loaded %d users:", len(users))
+	for _, u := range users {
+		log.Printf("user: %s", u.User)
+	}
+
 	cmdchan := make(chan TwitterCommand, 1)
-	newtweetchan := make(chan []*Tweet, 1)
+	newtweetchan := make(chan []*Tweet, 10)
 	lookupchan := make(chan TweetRequest, 1)
 	uiactionchan := make(chan UserInterfaceAction, 10)
 
-	model := NewModel(tapi, cmdchan, newtweetchan, lookupchan, uiactionchan, cfg)
+	model := NewModel(users, cmdchan, newtweetchan, lookupchan, uiactionchan, cfg)
 	go model.Run()
 
 	ui := NewUserInterface(cmdchan, newtweetchan, lookupchan, uiactionchan, cfg)
@@ -142,23 +147,30 @@ func LoadAccessTokens(cfgdir string, cfg *goconf.ConfigFile) ([]UserTwitterAPITu
 
 	f, err := os.Open(cfgdir)
 	if err != nil {
+		log.Printf("failed to open %s: %v", cfgdir, err)
 		return users, err
 	}
 	defer f.Close()
 
 	files, err := f.Readdir(-1)
 	if err != nil {
+		log.Printf("readdir failed: %v", err)
 		return users, err
 	}
 
+	log.Printf("found %d files in %s", len(files), cfgdir)
+
 	for _, fi := range files {
+		log.Printf("file: %s", fi.Name)
 		if strings.HasPrefix(fi.Name, "access_token.json") {
 			if at, err := LoadAccessToken(cfgdir + "/" + fi.Name); err == nil {
 				tapi := NewTwitterAPI(CONSUMER_KEY, CONSUMER_SECRET, cfg)
 				tapi.SetAccessToken(at)
-				if user, err := tapi.VerifyCredentials(); err != nil {
+				if user, err := tapi.VerifyCredentials(); err == nil {
 					users = append(users, UserTwitterAPITuple{User: *user.Screen_name, Tapi: tapi})
 				}
+			} else {
+				log.Printf("loading access token from %s failed: %v", fi.Name, err)
 			}
 		}
 	}
