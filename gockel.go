@@ -74,8 +74,11 @@ func main() {
 		return
 	}
 
+	fmt.Printf("Starting %s %s...\n", PROGRAM_NAME, PROGRAM_VERSION)
+
 	var users []UserTwitterAPITuple
 
+	fmt.Printf("Loading user information...")
 	for {
 		users, err = LoadAccessTokens(cfgdir, cfg)
 		if err != nil {
@@ -92,6 +95,8 @@ func main() {
 			return
 		}
 	}
+
+	fmt.Println(" done.")
 
 	log.Printf("loaded %d users:", len(users))
 	for _, u := range users {
