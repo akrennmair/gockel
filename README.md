@@ -28,6 +28,9 @@ In particular, gockel depends upon the following packages:
 
 Use goinstall to install these packages.
 
+If you want to install gockel into your path, run "gomake install" or "gb -i". To
+uninstall, run "gomake nuke" or "gb -N".
+
 Using
 -----
 
