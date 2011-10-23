@@ -2,7 +2,8 @@ ChangeLog for gockel
 --------------------
 
 0.2:
-	Implented follow and unfollow.
+	Implemented multi-account support.
+	Implemented follow and unfollow.
 
 0.1 (2011-10-23):
 	Initial release.
