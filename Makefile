@@ -12,6 +12,6 @@ GOFILES=gockel.go \
 include $(GOROOT)/src/Make.cmd
 
 gofmt:
-	for f in $(GOFMT) ; do gofmt $$f > $$f.new ; mv $$f.new $$f ; done
+	for f in $(GOFILES) ; do gofmt $$f > $$f.new ; mv $$f.new $$f ; done
 
 .PHONY: gofmt

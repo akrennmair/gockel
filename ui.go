@@ -46,7 +46,7 @@ type UserInterfaceAction struct {
 func NewUserInterface(cc chan<- TwitterCommand, tc <-chan []*Tweet, lc chan<- TweetRequest, uac chan UserInterfaceAction, cfg *goconf.ConfigFile) *UserInterface {
 	stfl.Init()
 	ui := &UserInterface{
-		form:                  stfl.Create(`vbox[root]
+		form: stfl.Create(`vbox[root]
   @style_normal[style_background]:
   hbox
     .expand:0
@@ -79,7 +79,7 @@ func NewUserInterface(cc chan<- TwitterCommand, tc <-chan []*Tweet, lc chan<- Tw
 	}
 	ui.constructTweetList()
 	ui.setColors()
-	ui.form.Set("program", " " + PROGRAM_NAME + " " + PROGRAM_VERSION)
+	ui.form.Set("program", " "+PROGRAM_NAME+" "+PROGRAM_VERSION)
 	return ui
 }
 
@@ -88,10 +88,10 @@ func (ui *UserInterface) setColors() {
 		return
 	}
 
-	for _, elem := range []string{ "shorthelp", "infotext", "listfocus", "listnormal", "background", "input", "userlist", "userlist_active" } {
+	for _, elem := range []string{"shorthelp", "infotext", "listfocus", "listnormal", "background", "input", "userlist", "userlist_active"} {
 		if value, err := ui.cfg.GetString("colors", elem); err == nil && value != "" {
 			// TODO: check whether value is syntactically valid
-			ui.form.Set("style_" + elem, value)
+			ui.form.Set("style_"+elem, value)
 		}
 	}
 }
@@ -120,7 +120,7 @@ func (ui *UserInterface) constructTweetList() {
 			}
 
 			if rx[0:1] == "/" && rx[len(rx)-1:] == "/" {
-				rx = rx[1:len(rx)-1]
+				rx = rx[1 : len(rx)-1]
 			}
 
 			compiled_rx, err := regexp.Compile(rx)
@@ -142,7 +142,6 @@ func (ui *UserInterface) constructTweetList() {
 	buf.WriteString(" richtext:1}")
 	ui.form.Modify("tweets", "replace", string(buf.Bytes()))
 }
-
 
 func (ui *UserInterface) GetActionChannel() chan UserInterfaceAction {
 	return ui.actionchan
@@ -216,7 +215,7 @@ func (ui *UserInterface) ResetLastLine() {
 	ui.form.Modify("lastline", "replace", "{hbox[lastline] .expand:0 {label text[msg]:\"\" .expand:h}}")
 }
 
-func(ui *UserInterface) UpdateRemaining() {
+func (ui *UserInterface) UpdateRemaining() {
 	if ui.form.GetFocus() == "tweetinput" {
 		text := ui.form.Get("inputfield")
 		rem_len := 140 - utf8.RuneCountInString(text)
@@ -248,7 +247,7 @@ func (ui *UserInterface) UpdateInfoLine() {
 				real_name = *tweet.User.Name
 			}
 			if tweet.User.Location != nil && *tweet.User.Location != "" {
-				location = " - "+*tweet.User.Location
+				location = " - " + *tweet.User.Location
 			}
 		}
 		if tweet.Created_at != nil {
@@ -273,7 +272,7 @@ func (ui *UserInterface) HandleRawInput(input string) {
 		}
 		tweet := ui.LookupTweet(ui.in_reply_to_status_id)
 		if tweet != nil {
-			ui.SetInputField("Reply: ", "@"+*tweet.User.Screen_name+" ","end-input", true)
+			ui.SetInputField("Reply: ", "@"+*tweet.User.Screen_name+" ", "end-input", true)
 		} else {
 			log.Printf("tweet lookup for %d failed\n", ui.in_reply_to_status_id)
 			ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Error: tweet lookup by status ID failed! (BUG?)"}}
@@ -372,7 +371,7 @@ func (ui *UserInterface) InputLoop() {
 				ui.actionchan <- UserInterfaceAction{RAW_INPUT, []string{event}}
 			}
 		} else {
-			ui.actionchan <- UserInterfaceAction{Action:KEY_PRESS}
+			ui.actionchan <- UserInterfaceAction{Action: KEY_PRESS}
 		}
 	}
 	stfl.Reset()
@@ -415,7 +414,7 @@ func (ui *UserInterface) addTweets(tweets []*Tweet) {
 func (ui *UserInterface) highlight(str string) string {
 	for idx, rx := range ui.highlight_rx {
 		str = rx.ReplaceAllStringFunc(str, func(s string) string {
-			return fmt.Sprintf("<%d>%s</>",idx, s)
+			return fmt.Sprintf("<%d>%s</>", idx, s)
 		})
 	}
 	return str
@@ -426,6 +425,5 @@ func (ui *UserInterface) IncrementPosition(size int) {
 	if err != nil {
 		return
 	}
-	ui.form.Set("tweetpos", fmt.Sprintf("%d", oldpos + size))
+	ui.form.Set("tweetpos", fmt.Sprintf("%d", oldpos+size))
 }
-

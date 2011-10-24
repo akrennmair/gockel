@@ -38,9 +38,9 @@ const (
 )
 
 type TwitterCommand struct {
-	Cmd CmdId
+	Cmd  CmdId
 	Data Tweet
-	Pos uint // for SET_CURUSER
+	Pos  uint // for SET_CURUSER
 }
 
 func NewModel(users []UserTwitterAPITuple, cc chan TwitterCommand, ntc chan<- []*Tweet, lc <-chan TweetRequest, uac chan<- UserInterfaceAction, cfg *goconf.ConfigFile) *Model {
@@ -66,7 +66,7 @@ func NewModel(users []UserTwitterAPITuple, cc chan TwitterCommand, ntc chan<- []
 		}
 	}
 
-	userlist := []string{ strconv.Uitoa(model.cur_user) }
+	userlist := []string{strconv.Uitoa(model.cur_user)}
 	for _, u := range model.users {
 		userlist = append(userlist, u.User)
 	}
@@ -112,7 +112,6 @@ func (m *Model) Run() {
 		}
 	}
 }
-
 
 func (m *Model) HandleCommand(cmd TwitterCommand) {
 	switch cmd.Cmd {
@@ -184,14 +183,14 @@ func StartUserStreams(users []UserTwitterAPITuple, new_tweets chan<- []*Tweet, u
 	for i, _ := range users {
 		go func(i int) {
 			if home_tl, err := users[i].Tapi.HomeTimeline(50, 0); err == nil {
-				hometl_tweets <-home_tl.Tweets
+				hometl_tweets <- home_tl.Tweets
 			} else {
-				hometl_tweets <-[]*Tweet{}
+				hometl_tweets <- []*Tweet{}
 			}
 		}(i)
 	}
 
-	for i:=0;i<len(users);i++ {
+	for i := 0; i < len(users); i++ {
 		tweets := <-hometl_tweets
 		initial_tweets = append(initial_tweets, tweets...)
 	}

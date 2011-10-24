@@ -14,11 +14,11 @@ import (
 )
 
 const (
-	PROGRAM_NAME = "gockel"
+	PROGRAM_NAME    = "gockel"
 	PROGRAM_VERSION = "0.1"
-	PROGRAM_URL = "https://github.com/akrennmair/gockel"
+	PROGRAM_URL     = "https://github.com/akrennmair/gockel"
 
-	CONSUMER_KEY = "sDggzGbHbyAfl5fJ87XOCA" 
+	CONSUMER_KEY    = "sDggzGbHbyAfl5fJ87XOCA"
 	CONSUMER_SECRET = "MOCQDL7ot7qIxMwYL5x1mMAqiYBYxNTxPWS6tc6hw"
 )
 

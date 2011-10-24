@@ -77,7 +77,7 @@ type PlaceDesc struct {
 }
 
 type TwitterEvent struct {
-	Delete       *WhatEvent
+	Delete *WhatEvent
 }
 
 type WhatEvent struct {
@@ -91,10 +91,9 @@ type EventDetail struct {
 	User_id_str *string
 }
 
-
 const (
 	request_token_url = "https://twitter.com/oauth/request_token"
-	access_token_url = "https://twitter.com/oauth/access_token"
+	access_token_url  = "https://twitter.com/oauth/access_token"
 	authorization_url = "https://twitter.com/oauth/authorize"
 
 	INITIAL_NETWORK_WAIT int64 = 250e6 // 250 milliseconds
@@ -142,7 +141,7 @@ func (tapi *TwitterAPI) GetRequestAuthorizationURL() (string, os.Error) {
 	return s, err
 }
 
-func(tapi *TwitterAPI) GetRateLimit() (remaining uint, limit uint, reset int64) {
+func (tapi *TwitterAPI) GetRateLimit() (remaining uint, limit uint, reset int64) {
 	curtime, _, _ := os.Time()
 	return tapi.ratelimit_rem, tapi.ratelimit_limit, tapi.ratelimit_reset - curtime
 }
@@ -423,7 +422,7 @@ func (tapi *TwitterAPI) Retweet(tweet Tweet) (*Tweet, os.Error) {
 	return newtweet, nil
 }
 
-func(tapi *TwitterAPI) Favorite(tweet Tweet) os.Error {
+func (tapi *TwitterAPI) Favorite(tweet Tweet) os.Error {
 	resp, err := tapi.authcon.Post(fmt.Sprintf("https://api.twitter.com/1/favorites/create/%d.json", *tweet.Id), oauth.Params{}, tapi.access_token)
 	if err != nil {
 		return err
@@ -437,9 +436,9 @@ func(tapi *TwitterAPI) Favorite(tweet Tweet) os.Error {
 }
 
 func (tapi *TwitterAPI) Follow(screen_name string) os.Error {
-	params := oauth.Params {
+	params := oauth.Params{
 		&oauth.Pair{
-			Key: "screen_name",
+			Key:   "screen_name",
 			Value: screen_name,
 		},
 	}
@@ -456,13 +455,13 @@ func (tapi *TwitterAPI) Follow(screen_name string) os.Error {
 }
 
 func (tapi *TwitterAPI) Unfollow(user TwitterUser) os.Error {
-	params := oauth.Params {
+	params := oauth.Params{
 		&oauth.Pair{
-			Key: "user_id",
+			Key:   "user_id",
 			Value: *user.Id_str,
 		},
 		&oauth.Pair{
-			Key: "screen_name",
+			Key:   "screen_name",
 			Value: *user.Screen_name,
 		},
 	}
@@ -478,10 +477,10 @@ func (tapi *TwitterAPI) Unfollow(user TwitterUser) os.Error {
 	return nil
 }
 
-func(tapi *TwitterAPI) VerifyCredentials() (*TwitterUser, os.Error) {
-	params := oauth.Params {
-		&oauth.Pair {
-			Key: "skip_status",
+func (tapi *TwitterAPI) VerifyCredentials() (*TwitterUser, os.Error) {
+	params := oauth.Params{
+		&oauth.Pair{
+			Key:   "skip_status",
 			Value: "true",
 		},
 	}
@@ -548,7 +547,7 @@ func (e HTTPError) String() string {
 	return "HTTP code " + strconv.Itoa(int(e))
 }
 
-func(tapi *TwitterAPI) UserStream(tweetchan chan<- []*Tweet, actions chan<- UserInterfaceAction) {
+func (tapi *TwitterAPI) UserStream(tweetchan chan<- []*Tweet, actions chan<- UserInterfaceAction) {
 	network_wait := INITIAL_NETWORK_WAIT
 	http_wait := INITIAL_HTTP_WAIT
 	last_network_backoff := time.Seconds()
@@ -561,7 +560,7 @@ func(tapi *TwitterAPI) UserStream(tweetchan chan<- []*Tweet, actions chan<- User
 				if (time.Seconds() - last_http_backoff) > 1800 {
 					http_wait = INITIAL_HTTP_WAIT
 				}
-				log.Printf("HTTP wait: backing off %d seconds", http_wait / 1e9)
+				log.Printf("HTTP wait: backing off %d seconds", http_wait/1e9)
 				time.Sleep(http_wait)
 				if http_wait < MAX_HTTP_WAIT {
 					http_wait *= 2
@@ -571,7 +570,7 @@ func(tapi *TwitterAPI) UserStream(tweetchan chan<- []*Tweet, actions chan<- User
 				if (time.Seconds() - last_network_backoff) > 1800 {
 					network_wait = INITIAL_NETWORK_WAIT
 				}
-				log.Printf("Network wait: backing off %d milliseconds", network_wait / 1e6)
+				log.Printf("Network wait: backing off %d milliseconds", network_wait/1e6)
 				time.Sleep(network_wait)
 				if network_wait < MAX_NETWORK_WAIT {
 					network_wait += INITIAL_NETWORK_WAIT
@@ -582,7 +581,7 @@ func(tapi *TwitterAPI) UserStream(tweetchan chan<- []*Tweet, actions chan<- User
 	}
 }
 
-func(tapi *TwitterAPI) doUserStream(tweetchan chan<- []*Tweet, actions chan<- UserInterfaceAction) os.Error {
+func (tapi *TwitterAPI) doUserStream(tweetchan chan<- []*Tweet, actions chan<- UserInterfaceAction) os.Error {
 	resp, err := tapi.authcon.Get("https://userstream.twitter.com/2/user.json", oauth.Params{}, tapi.access_token)
 	if err != nil {
 		return err
@@ -596,7 +595,7 @@ func(tapi *TwitterAPI) doUserStream(tweetchan chan<- []*Tweet, actions chan<- Us
 	}
 
 	buf := bufio.NewReader(resp.Body)
-	
+
 	for {
 		line, err := getLine(buf)
 		if err != nil {
@@ -626,7 +625,7 @@ func(tapi *TwitterAPI) doUserStream(tweetchan chan<- []*Tweet, actions chan<- Us
 				continue
 			}
 			if newtweet.Id != nil && newtweet.Text != nil {
-				tweetchan <- []*Tweet{ newtweet }
+				tweetchan <- []*Tweet{newtweet}
 			}
 		}
 	}
@@ -684,15 +683,14 @@ func (t *Tweet) RelativeCreatedAt() string {
 		return "less than a minute ago"
 	case delta < 120:
 		return "about a minute ago"
-	case delta < 45 * 60:
+	case delta < 45*60:
 		return fmt.Sprintf("about %d minutes ago", delta/60)
-	case delta < 120 * 60:
+	case delta < 120*60:
 		return "about an hour ago"
-	case delta < 24 * 60 * 60:
+	case delta < 24*60*60:
 		return fmt.Sprintf("about %d hours ago", delta/3600)
-	case delta < 48 * 60 * 60:
+	case delta < 48*60*60:
 		return "1 day ago"
 	}
-	return fmt.Sprintf("%d days ago", delta/(3600 * 24))
+	return fmt.Sprintf("%d days ago", delta/(3600*24))
 }
-
