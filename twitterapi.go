@@ -582,6 +582,14 @@ func (tapi *TwitterAPI) UserStream(tweetchan chan<- []*Tweet, actions chan<- Use
 }
 
 func (tapi *TwitterAPI) doUserStream(tweetchan chan<- []*Tweet, actions chan<- UserInterfaceAction) os.Error {
+	resolve_urls := false
+
+	if tapi.config != nil {
+		if resolve, err := tapi.config.GetBool("default", "resolve_urls"); err == nil {
+			resolve_urls = resolve
+		}
+	}
+
 	resp, err := tapi.authcon.Get("https://userstream.twitter.com/2/user.json", oauth.Params{}, tapi.access_token)
 	if err != nil {
 		return err
@@ -624,6 +632,12 @@ func (tapi *TwitterAPI) doUserStream(tweetchan chan<- []*Tweet, actions chan<- U
 				log.Printf("couldn't unmarshal tweet: %v\n", err)
 				continue
 			}
+
+			// TODO: move this to goroutine if resolving turns out to block everything.
+			if resolve_urls {
+				newtweet.ResolveURLs()
+			}
+
 			if newtweet.Id != nil && newtweet.Text != nil {
 				tweetchan <- []*Tweet{newtweet}
 			}
@@ -693,4 +707,17 @@ func (t *Tweet) RelativeCreatedAt() string {
 		return "1 day ago"
 	}
 	return fmt.Sprintf("%d days ago", delta/(3600*24))
+}
+
+func longify_url(url string) string {
+	if resp, err := http.Head(url); err == nil && resp.Request != nil && resp.Request.URL != nil {
+		return resp.Request.URL.String()
+	}
+	return url
+}
+
+func (t *Tweet) ResolveURLs() {
+	if t.Text != nil {
+		*t.Text = FindURLs(*t.Text, longify_url)
+	}
 }
