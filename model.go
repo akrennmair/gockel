@@ -82,6 +82,18 @@ func (m *Model) Run() {
 
 	go StartUserStreams(m.users, new_tweets, m.uiactionchan)
 
+	go func() {
+		if config, err := m.users[m.cur_user].Tapi.Configuration(); err == nil {
+			log.Printf("Twitter config data: %v", config)
+			if config.Short_url_length != nil {
+				length := []string{strconv.Itoa64(*config.Short_url_length)}
+				m.uiactionchan <- UserInterfaceAction{SET_URLLENGTH, length}
+			}
+		} else {
+			log.Printf("reading Twitter config data failed: %v", err)
+		}
+	}()
+
 	for {
 		select {
 		case cmd := <-m.cmdchan:

@@ -25,6 +25,7 @@ type UserInterface struct {
 	highlight_rx          []*regexp.Regexp
 	users                 []string
 	cur_user              uint
+	short_url_length      int
 }
 
 type ActionId int
@@ -36,6 +37,7 @@ const (
 	SHOW_MSG
 	KEY_PRESS
 	SET_USERLIST
+	SET_URLLENGTH
 )
 
 type UserInterfaceAction struct {
@@ -191,6 +193,9 @@ func (ui *UserInterface) HandleAction(action UserInterfaceAction) {
 		ui.users = action.Args[1:]
 		ui.UpdateUserList()
 		ui.form.Run(-1)
+	case SET_URLLENGTH:
+		ui.short_url_length, _ = strconv.Atoi(action.Args[0])
+		log.Printf("set short_url_length to %d", ui.short_url_length)
 	}
 }
 
@@ -219,6 +224,13 @@ func (ui *UserInterface) UpdateRemaining() {
 	if ui.form.GetFocus() == "tweetinput" {
 		text := ui.form.Get("inputfield")
 		rem_len := 140 - utf8.RuneCountInString(text)
+		if ui.short_url_length > 0 {
+			FindURLs(text, func(url string) string {
+				rem_len += len(url)
+				rem_len -= ui.short_url_length
+				return url
+			})
+		}
 		ui.form.Set("remaining", fmt.Sprintf("%4d ", rem_len))
 		if rem_len > 15 {
 			ui.form.Set("remaining_style", "fg=white,attr=bold")

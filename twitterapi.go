@@ -91,6 +91,13 @@ type EventDetail struct {
 	User_id_str *string
 }
 
+type Configuration struct {
+	Characters_reserved_per_media *int64
+	Max_media_per_upload          *int64
+	Short_url_length_https        *int64
+	Short_url_length              *int64
+}
+
 const (
 	request_token_url = "https://twitter.com/oauth/request_token"
 	access_token_url  = "https://twitter.com/oauth/access_token"
@@ -475,6 +482,30 @@ func (tapi *TwitterAPI) Unfollow(user TwitterUser) os.Error {
 	}
 
 	return nil
+}
+
+func (tapi *TwitterAPI) Configuration() (*Configuration, os.Error) {
+	params := oauth.Params{}
+	resp, err := tapi.authcon.Get("https://api.twitter.com/1/help/configuration.json", params, tapi.access_token)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != 200 {
+		return nil, os.NewError(resp.Status)
+	}
+
+	jsondata, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	config := &Configuration{}
+	if err := json.Unmarshal(jsondata, config); err != nil {
+		return nil, err
+	}
+
+	return config, nil
 }
 
 func (tapi *TwitterAPI) VerifyCredentials() (*TwitterUser, os.Error) {
