@@ -4,6 +4,7 @@ ChangeLog for gockel
 0.2:
 	Implemented multi-account support.
 	Implemented follow and unfollow.
+	Take length of resulting t.co URLs into account when computing remaining length
 
 0.1 (2011-10-23):
 	Initial release.
