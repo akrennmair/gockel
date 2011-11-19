@@ -49,7 +49,6 @@ Currently, the following keystrokes are available:
 * r: reply to currently selected tweet
 * R: publicly reply to currently selected tweet
 * Ctrl-F: favorite currently selected tweet
-* Ctrl-O: shorten all URLs in the current input field
 * F: follow a user (you will be prompted for the username)
 * U: unfollow the publisher user of the currently selected tweet
 * 1..9: select user (for multi-account support, see below)
