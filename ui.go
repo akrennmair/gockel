@@ -310,6 +310,21 @@ func (ui *UserInterface) HandleRawInput(input string) {
 		*status_id_ptr = status_id
 		ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Retweeting..."}}
 		ui.cmdchan <- TwitterCommand{Cmd: RETWEET, Data: Tweet{Id: status_id_ptr}}
+	case "^E":
+		rt_status_id, err := strconv.Atoi64(ui.form.Get("status_id"))
+		if err != nil {
+			log.Printf("conversion of %s failed: %v", ui.form.Get("status_id"), err)
+			ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Error: couldn't determine status ID! (BUG?)"}}
+			break
+		}
+		tweet := ui.LookupTweet(rt_status_id)
+		if tweet != nil {
+			rt_text := "RT @" + *tweet.User.Screen_name + ": " + *tweet.Text
+			ui.SetInputField("Tweet: ", rt_text, "end-input", true)
+		} else {
+			log.Printf("tweet lookup for %d failed\n", ui.in_reply_to_status_id)
+			ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Error: tweet lookup by status ID failed! (BUG?)"}}
+		}
 	case "^F":
 		status_id, err := strconv.Atoi64(ui.form.Get("status_id"))
 		if err != nil {

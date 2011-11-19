@@ -46,6 +46,7 @@ Currently, the following keystrokes are available:
 * q: quit program
 * ENTER: write a new tweet
 * Ctrl-R: retweet currently selected tweet
+* Ctrl-E: retweet currently selected tweet, but edit the tweet beforehand
 * r: reply to currently selected tweet
 * R: publicly reply to currently selected tweet
 * Ctrl-F: favorite currently selected tweet
