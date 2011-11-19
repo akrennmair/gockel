@@ -2,10 +2,6 @@ package main
 
 import (
 	"strings"
-	"url"
-	"http"
-	"bytes"
-	"io/ioutil"
 )
 
 func FindURLs(text string, replacefunc func(string) string) string {
@@ -45,28 +41,4 @@ func FindURLs(text string, replacefunc func(string) string) string {
 	}
 
 	return newtext
-}
-
-func ShortenURL(u string) string {
-	resp, err := http.Get("http://krzz.de/_api/save?url=" + url.QueryEscape(u))
-	if err != nil {
-		return u
-	}
-
-	if resp.StatusCode != 200 {
-		return u
-	}
-
-	newurl, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return u
-	}
-
-	newurl = bytes.Trim(newurl, "\r\n ")
-
-	if len(newurl) > len(u) {
-		return u
-	}
-
-	return string(newurl)
 }

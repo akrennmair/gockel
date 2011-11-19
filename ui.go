@@ -64,7 +64,7 @@ func NewUserInterface(cc chan<- TwitterCommand, tc <-chan []*Tweet, lc chan<- Tw
       @style_normal[style_infotext]:bg=blue,fg=yellow,attr=bold
       label text[infoline]:">> " .expand:h
       label text[program]:"" .expand:0
-    label text[shorthelp]:"q:Quit ENTER:New Tweet ^R:Retweet r:Reply ^F:Favorite ^O:Shorten URL" .expand:h style_normal[style_shorthelp]:bg=blue,fg=white,attr=bold
+    label text[shorthelp]:"q:Quit ENTER:New Tweet ^R:Retweet r:Reply ^F:Favorite" .expand:h style_normal[style_shorthelp]:bg=blue,fg=white,attr=bold
   hbox[lastline]
     .expand:0
     label text[msg]:"" .expand:h
@@ -311,12 +311,6 @@ func (ui *UserInterface) HandleRawInput(input string) {
 		*status_id_ptr = status_id
 		ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Favoriting..."}}
 		ui.cmdchan <- TwitterCommand{Cmd: FAVORITE, Data: Tweet{Id: status_id_ptr}}
-	case "^O":
-		if ui.form.GetFocus() == "tweetinput" {
-			text := ui.form.Get("inputfield")
-			text = FindURLs(text, ShortenURL)
-			ui.form.Set("inputfield", text)
-		}
 	case "F":
 		ui.SetInputField("Follow: ", "", "end-input-follow", false)
 	case "end-input-follow":
