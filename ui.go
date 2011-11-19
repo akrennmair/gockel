@@ -64,7 +64,7 @@ func NewUserInterface(cc chan<- TwitterCommand, tc <-chan []*Tweet, lc chan<- Tw
       @style_normal[style_infotext]:bg=blue,fg=yellow,attr=bold
       label text[infoline]:">> " .expand:h
       label text[program]:"" .expand:0
-      label text[shorthelp]:"q:Quit ENTER:New Tweet ^R:Retweet r:Reply R:Public Reply ^F:Favorite" .expand:h style_normal[style_shorthelp]:bg=blue,fg=white,attr=bold
+    label text[shorthelp]:"q:Quit ENTER:New Tweet ^R:Retweet r:Reply R:Public Reply ^F:Favorite" .expand:h style_normal[style_shorthelp]:bg=blue,fg=white,attr=bold
   hbox[lastline]
     .expand:0
     label text[msg]:"" .expand:h
