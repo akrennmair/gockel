@@ -52,6 +52,7 @@ Currently, the following keystrokes are available:
 * Ctrl-F: favorite currently selected tweet
 * F: follow a user (you will be prompted for the username)
 * U: unfollow the publisher user of the currently selected tweet
+* D: delete currently selected tweet
 * 1..9: select user (for multi-account support, see below)
 
 Configuration

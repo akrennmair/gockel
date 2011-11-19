@@ -64,7 +64,7 @@ func NewUserInterface(cc chan<- TwitterCommand, tc <-chan []*Tweet, lc chan<- Tw
       @style_normal[style_infotext]:bg=blue,fg=yellow,attr=bold
       label text[infoline]:">> " .expand:h
       label text[program]:"" .expand:0
-    label text[shorthelp]:"q:Quit ENTER:New Tweet ^R:Retweet r:Reply R:Public Reply ^F:Favorite" .expand:h style_normal[style_shorthelp]:bg=blue,fg=white,attr=bold
+	  label text[shorthelp]:"q:Quit ENTER:New Tweet ^R:Retweet r:Reply R:Public Reply ^F:Favorite D:Delete" .expand:h style_normal[style_shorthelp]:bg=blue,fg=white,attr=bold
   hbox[lastline]
     .expand:0
     label text[msg]:"" .expand:h
@@ -354,6 +354,13 @@ func (ui *UserInterface) HandleRawInput(input string) {
 			if tweet := ui.LookupTweet(status_id); tweet != nil {
 				ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Unfollowing " + *tweet.User.Screen_name + "..."}}
 				ui.cmdchan <- TwitterCommand{Cmd: UNFOLLOW, Data: *tweet}
+			}
+		}
+	case "D":
+		if status_id, err := strconv.Atoi64(ui.form.Get("status_id")); err == nil {
+			if tweet := ui.LookupTweet(status_id); tweet != nil {
+				ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Deleting tweet..."}}
+				ui.cmdchan <- TwitterCommand{Cmd: DESTROY_TWEET, Data: *tweet}
 			}
 		}
 	case "1", "2", "3", "4", "5", "6", "7", "8", "9":

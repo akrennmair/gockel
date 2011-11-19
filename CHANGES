@@ -6,7 +6,7 @@ ChangeLog for gockel
 	Implemented follow and unfollow.
 	Take length of resulting t.co URLs into account when computing remaining length
 	Removed URL shortening function since it's obsolete with the mandatory t.co URLs
-	Added keys for public reply and editing before retweeting
+	Added keys for public reply, editing before retweeting and deleting tweets
 
 0.1 (2011-10-23):
 	Initial release.

@@ -37,6 +37,7 @@ const (
 	FAVORITE
 	FOLLOW
 	UNFOLLOW
+	DESTROY_TWEET
 	SET_CURUSER
 )
 
@@ -178,6 +179,14 @@ func (m *Model) HandleCommand(cmd TwitterCommand) {
 				m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{""}}
 			} else {
 				m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{"Unfollowing " + *cmd.Data.User.Screen_name + " failed: " + err.String()}}
+			}
+		}(m.cur_user)
+	case DESTROY_TWEET:
+		go func(cur_user uint) {
+			if err := m.users[cur_user].Tapi.DestroyTweet(cmd.Data); err == nil {
+				m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{""}}
+			} else {
+				m.uiactionchan <- UserInterfaceAction{SHOW_MSG, []string{"Deleting tweet failed: " + err.String()}}
 			}
 		}(m.cur_user)
 	case SET_CURUSER:

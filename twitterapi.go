@@ -484,6 +484,19 @@ func (tapi *TwitterAPI) Unfollow(user TwitterUser) os.Error {
 	return nil
 }
 
+func (tapi *TwitterAPI) DestroyTweet(tweet Tweet) os.Error {
+	resp, err := tapi.authcon.Post(fmt.Sprintf("https://api.twitter.com/1/statuses/destroy/%d.json", *tweet.Id), oauth.Params{}, tapi.access_token)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != 200 {
+		return os.NewError(resp.Status)
+	}
+
+	return nil
+}
+
 func (tapi *TwitterAPI) Configuration() (*Configuration, os.Error) {
 	params := oauth.Params{}
 	resp, err := tapi.authcon.Get("https://api.twitter.com/1/help/configuration.json", params, tapi.access_token)
