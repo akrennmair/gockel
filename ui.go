@@ -64,7 +64,7 @@ func NewUserInterface(cc chan<- TwitterCommand, tc <-chan []*Tweet, lc chan<- Tw
       @style_normal[style_infotext]:bg=blue,fg=yellow,attr=bold
       label text[infoline]:">> " .expand:h
       label text[program]:"" .expand:0
-    label text[shorthelp]:"q:Quit ENTER:New Tweet ^R:Retweet r:Reply ^F:Favorite" .expand:h style_normal[style_shorthelp]:bg=blue,fg=white,attr=bold
+      label text[shorthelp]:"q:Quit ENTER:New Tweet ^R:Retweet r:Reply R:Public Reply ^F:Favorite" .expand:h style_normal[style_shorthelp]:bg=blue,fg=white,attr=bold
   hbox[lastline]
     .expand:0
     label text[msg]:"" .expand:h
@@ -270,25 +270,35 @@ func (ui *UserInterface) UpdateInfoLine() {
 	}
 }
 
+func (ui *UserInterface) StartReply(public bool) {
+	var err os.Error
+	ui.in_reply_to_status_id, err = strconv.Atoi64(ui.form.Get("status_id"))
+	if err != nil {
+		log.Printf("conversion of %s failed: %v", ui.form.Get("status_id"), err)
+		ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Error: couldn't determine status ID! (BUG?)"}}
+		return
+	}
+	tweet := ui.LookupTweet(ui.in_reply_to_status_id)
+	if tweet != nil {
+		default_text := "@" + *tweet.User.Screen_name + " "
+		if public {
+			default_text = "." + default_text
+		}
+		ui.SetInputField("Reply: ", default_text, "end-input", true)
+	} else {
+		log.Printf("tweet lookup for %d failed\n", ui.in_reply_to_status_id)
+		ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Error: tweet lookup by status ID failed! (BUG?)"}}
+	}
+}
+
 func (ui *UserInterface) HandleRawInput(input string) {
 	switch input {
 	case "ENTER":
 		ui.SetInputField("Tweet: ", "", "end-input", true)
+	case "R":
+		ui.StartReply(true)
 	case "r":
-		var err os.Error
-		ui.in_reply_to_status_id, err = strconv.Atoi64(ui.form.Get("status_id"))
-		if err != nil {
-			log.Printf("conversion of %s failed: %v", ui.form.Get("status_id"), err)
-			ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Error: couldn't determine status ID! (BUG?)"}}
-			break
-		}
-		tweet := ui.LookupTweet(ui.in_reply_to_status_id)
-		if tweet != nil {
-			ui.SetInputField("Reply: ", "@"+*tweet.User.Screen_name+" ", "end-input", true)
-		} else {
-			log.Printf("tweet lookup for %d failed\n", ui.in_reply_to_status_id)
-			ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Error: tweet lookup by status ID failed! (BUG?)"}}
-		}
+		ui.StartReply(false)
 	case "^R":
 		status_id, err := strconv.Atoi64(ui.form.Get("status_id"))
 		if err != nil {

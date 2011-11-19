@@ -47,6 +47,7 @@ Currently, the following keystrokes are available:
 * ENTER: write a new tweet
 * Ctrl-R: retweet currently selected tweet
 * r: reply to currently selected tweet
+* R: publicly reply to currently selected tweet
 * Ctrl-F: favorite currently selected tweet
 * Ctrl-O: shorten all URLs in the current input field
 * F: follow a user (you will be prompted for the username)
