@@ -2,11 +2,11 @@ TODO list for gockel
 ====================
 
 - write more tests
-- implement option "ignore_incoming" with list of accounts for which no userstream shall be started
 - add keys for "edit to retweet" and "public reply".
 
 done items:
 ===========
+- implement option "ignore_incoming" with list of accounts for which no userstream shall be started
 - remove URL shortening
 - multi-account support
 - add follow/unfollow

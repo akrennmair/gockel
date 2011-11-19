@@ -67,6 +67,9 @@ Currently, the following configuration options are available:
 
 * http_timeout: default connection timeout for HTTP requests in seconds (default: 60 seconds)
 * default_user: set the user that is selected by default on startup (for multi-account support, see below)
+* ignore_incoming: set the user(s) (space-separated list) for which no data from their timeline
+  shall be fetched. This feature was added to configure "write-only" accounts that are not
+  interested in reading the timeline.
 
 Color Configuration
 -------------------

@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"log"
 	"sort"
+	"strings"
 )
 
 type Model struct {
@@ -18,6 +19,7 @@ type Model struct {
 	lookupchan    <-chan TweetRequest
 	uiactionchan  chan<- UserInterfaceAction
 	last_id       int64
+	ignored_users []string
 }
 
 type TweetRequest struct {
@@ -53,6 +55,7 @@ func NewModel(users []UserTwitterAPITuple, cc chan TwitterCommand, ntc chan<- []
 		lookupchan:    lc,
 		tweet_map:     map[int64]*Tweet{},
 		uiactionchan:  uac,
+		ignored_users: []string{},
 	}
 
 	if cfg != nil {
@@ -63,6 +66,10 @@ func NewModel(users []UserTwitterAPITuple, cc chan TwitterCommand, ntc chan<- []
 					break
 				}
 			}
+		}
+
+		if ign, err := cfg.GetString("default", "ignore_incoming"); err == nil {
+			model.ignored_users = strings.Split(ign, " ")
 		}
 	}
 
@@ -80,7 +87,7 @@ func (m *Model) Run() {
 
 	new_tweets := make(chan []*Tweet, 10)
 
-	go StartUserStreams(m.users, new_tweets, m.uiactionchan)
+	go StartUserStreams(m.users, new_tweets, m.uiactionchan, m.ignored_users)
 
 	go func() {
 		if config, err := m.users[m.cur_user].Tapi.Configuration(); err == nil {
@@ -188,11 +195,28 @@ func (s TweetPtrSlice) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-func StartUserStreams(users []UserTwitterAPITuple, new_tweets chan<- []*Tweet, uiactions chan<- UserInterfaceAction) {
+func is_ignored(u string, ignored []string) bool {
+	for _, s := range ignored {
+		if u == s {
+			return true
+		}
+	}
+	return false
+}
+
+func StartUserStreams(users []UserTwitterAPITuple, new_tweets chan<- []*Tweet, uiactions chan<- UserInterfaceAction, ignored []string) {
 	initial_tweets := []*Tweet{}
 	hometl_tweets := make(chan []*Tweet, len(users))
 
+	user_count := 0
 	for i, _ := range users {
+
+		if is_ignored(users[i].User, ignored) {
+			continue
+		}
+
+		user_count++
+
 		go func(i int) {
 			if home_tl, err := users[i].Tapi.HomeTimeline(50, 0); err == nil {
 				hometl_tweets <- home_tl.Tweets
@@ -202,7 +226,7 @@ func StartUserStreams(users []UserTwitterAPITuple, new_tweets chan<- []*Tweet, u
 		}(i)
 	}
 
-	for i := 0; i < len(users); i++ {
+	for i := 0; i < user_count; i++ {
 		tweets := <-hometl_tweets
 		initial_tweets = append(initial_tweets, tweets...)
 	}
@@ -226,6 +250,8 @@ func StartUserStreams(users []UserTwitterAPITuple, new_tweets chan<- []*Tweet, u
 	new_tweets <- unique_tweets
 
 	for _, u := range users {
-		go u.Tapi.UserStream(new_tweets, uiactions)
+		if !is_ignored(u.User, ignored) {
+			go u.Tapi.UserStream(new_tweets, uiactions)
+		}
 	}
 }
