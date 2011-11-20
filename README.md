@@ -72,6 +72,8 @@ Currently, the following configuration options are available:
 * ignore_incoming: set the user(s) (space-separated list) for which no data from their timeline
   shall be fetched. This feature was added to configure "write-only" accounts that are not
   interested in reading the timeline.
+* confirm_quit: if set to true, after pressing "q", the user needs to confirm that he really wants to quit
+  the program (default: false).
 
 Color Configuration
 -------------------

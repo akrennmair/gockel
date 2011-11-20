@@ -26,6 +26,7 @@ type UserInterface struct {
 	users                 []string
 	cur_user              uint
 	short_url_length      int
+	confirm_quit          bool
 }
 
 type ActionId int
@@ -64,7 +65,7 @@ func NewUserInterface(cc chan<- TwitterCommand, tc <-chan []*Tweet, lc chan<- Tw
       @style_normal[style_infotext]:bg=blue,fg=yellow,attr=bold
       label text[infoline]:">> " .expand:h
       label text[program]:"" .expand:0
-	  label text[shorthelp]:"q:Quit ENTER:New Tweet ^R:Retweet r:Reply R:Public Reply ^F:Favorite D:Delete" .expand:h style_normal[style_shorthelp]:bg=blue,fg=white,attr=bold
+    label text[shorthelp]:"q:Quit ENTER:New Tweet ^R:Retweet r:Reply R:Public Reply ^F:Favorite D:Delete" .expand:h style_normal[style_shorthelp]:bg=blue,fg=white,attr=bold
   hbox[lastline]
     .expand:0
     label text[msg]:"" .expand:h
@@ -78,10 +79,18 @@ func NewUserInterface(cc chan<- TwitterCommand, tc <-chan []*Tweet, lc chan<- Tw
 		highlight_rx:          []*regexp.Regexp{},
 		users:                 []string{},
 		cur_user:              0,
+		confirm_quit:          false,
 	}
 	ui.constructTweetList()
 	ui.setColors()
 	ui.form.Set("program", " "+PROGRAM_NAME+" "+PROGRAM_VERSION)
+
+	if ui.cfg != nil {
+		if confirm_quit, err := ui.cfg.GetBool("default", "confirm_quit"); err == nil {
+			ui.confirm_quit = confirm_quit
+		}
+	}
+
 	return ui
 }
 
@@ -400,7 +409,20 @@ func (ui *UserInterface) LookupTweet(status_id int64) *Tweet {
 
 func (ui *UserInterface) InputLoop() {
 	event := ""
-	for event != "q" {
+	for {
+		if event == "q" {
+			if !ui.confirm_quit {
+				break
+			} else {
+				ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Quit "+PROGRAM_NAME+" (y/[n])?"}}
+				event = ui.form.Run(0)
+				if event == "y" {
+					break
+				}
+				ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{""}}
+				event = ""
+			}
+		}
 		event = ui.form.Run(0)
 		if event != "" {
 			if event == "^L" {
