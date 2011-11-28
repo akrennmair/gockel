@@ -103,10 +103,10 @@ func main() {
 		log.Printf("user: %s", u.User)
 	}
 
-	cmdchan := make(chan TwitterCommand, 1)
+	cmdchan := make(chan interface{}, 1)
 	newtweetchan := make(chan []*Tweet, 10)
 	lookupchan := make(chan TweetRequest, 1)
-	uiactionchan := make(chan UserInterfaceAction, 10)
+	uiactionchan := make(chan interface{}, 10)
 
 	model := NewModel(users, cmdchan, newtweetchan, lookupchan, uiactionchan, cfg)
 	go model.Run()

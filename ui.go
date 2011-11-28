@@ -16,9 +16,9 @@ import (
 
 type UserInterface struct {
 	form                  *stfl.Form
-	actionchan            chan UserInterfaceAction
+	actionchan            chan interface{}
 	tweetchan             <-chan []*Tweet
-	cmdchan               chan<- TwitterCommand
+	cmdchan               chan<- interface{}
 	lookupchan            chan<- TweetRequest
 	in_reply_to_status_id int64
 	cfg                   *goconf.ConfigFile
@@ -31,22 +31,24 @@ type UserInterface struct {
 
 type ActionId int
 
-const (
-	RESET_LAST_LINE ActionId = iota
-	RAW_INPUT
-	DELETE_TWEET
-	SHOW_MSG
-	KEY_PRESS
-	SET_USERLIST
-	SET_URLLENGTH
-)
+type ActionResetLastLine struct{}
 
-type UserInterfaceAction struct {
-	Action ActionId
-	Args   []string
+type ActionRawInput string
+
+type ActionDeleteTweet int64
+
+type ActionShowMsg string
+
+type ActionKeyPress struct{}
+
+type ActionSetUserList struct {
+	Id    uint
+	Users []string
 }
 
-func NewUserInterface(cc chan<- TwitterCommand, tc <-chan []*Tweet, lc chan<- TweetRequest, uac chan UserInterfaceAction, cfg *goconf.ConfigFile) *UserInterface {
+type ActionSetURLLength uint
+
+func NewUserInterface(cc chan<- interface{}, tc <-chan []*Tweet, lc chan<- TweetRequest, uac chan interface{}, cfg *goconf.ConfigFile) *UserInterface {
 	stfl.Init()
 	ui := &UserInterface{
 		form: stfl.Create(`vbox[root]
@@ -154,7 +156,7 @@ func (ui *UserInterface) constructTweetList() {
 	ui.form.Modify("tweets", "replace", string(buf.Bytes()))
 }
 
-func (ui *UserInterface) GetActionChannel() chan UserInterfaceAction {
+func (ui *UserInterface) GetActionChannel() chan interface{} {
 	return ui.actionchan
 }
 
@@ -173,38 +175,36 @@ func (ui *UserInterface) Run() {
 	}
 }
 
-func (ui *UserInterface) HandleAction(action UserInterfaceAction) {
-	switch action.Action {
-	case RESET_LAST_LINE:
+func (ui *UserInterface) HandleAction(action interface{}) {
+	switch v := action.(type) {
+	case ActionResetLastLine:
 		ui.ResetLastLine()
-	case RAW_INPUT:
-		input := action.Args[0]
-		ui.HandleRawInput(input)
-	case DELETE_TWEET:
-		ui.form.Modify(action.Args[0], "delete", "")
+	case ActionRawInput:
+		ui.HandleRawInput(string(v))
+	case ActionDeleteTweet:
+		delete_id := int64(v)
+		ui.form.Modify(strconv.Itoa64(delete_id), "delete", "")
 		if current_status_id, err := strconv.Atoi64(ui.form.Get("status_id")); err == nil {
-			delete_id, _ := strconv.Atoi64(action.Args[0])
 			if delete_id > current_status_id {
 				ui.IncrementPosition(-1)
 			}
 		}
 		ui.form.Run(-1)
-	case SHOW_MSG:
-		ui.form.Set("msg", action.Args[0])
+	case ActionShowMsg:
+		ui.form.Set("msg", string(v))
 		ui.form.Run(-1)
-	case KEY_PRESS:
+	case ActionKeyPress:
 		ui.UpdateInfoLine()
 		ui.UpdateRemaining()
 		ui.form.Set("msg", "")
 		ui.form.Run(-1)
-	case SET_USERLIST:
-		ui.cur_user, _ = strconv.Atoui(action.Args[0])
-		ui.users = action.Args[1:]
+	case ActionSetUserList:
+		ui.cur_user = v.Id
+		ui.users = v.Users
 		ui.UpdateUserList()
 		ui.form.Run(-1)
-	case SET_URLLENGTH:
-		ui.short_url_length, _ = strconv.Atoi(action.Args[0])
-		log.Printf("set short_url_length to %d", ui.short_url_length)
+	case ActionSetURLLength:
+		ui.short_url_length = int(v)
 	}
 }
 
@@ -284,7 +284,7 @@ func (ui *UserInterface) StartReply(public bool) {
 	ui.in_reply_to_status_id, err = strconv.Atoi64(ui.form.Get("status_id"))
 	if err != nil {
 		log.Printf("conversion of %s failed: %v", ui.form.Get("status_id"), err)
-		ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Error: couldn't determine status ID! (BUG?)"}}
+		ui.actionchan <- ActionShowMsg("Error: couldn't determine status ID! (BUG?)")
 		return
 	}
 	tweet := ui.LookupTweet(ui.in_reply_to_status_id)
@@ -296,7 +296,7 @@ func (ui *UserInterface) StartReply(public bool) {
 		ui.SetInputField("Reply: ", default_text, "end-input", true)
 	} else {
 		log.Printf("tweet lookup for %d failed\n", ui.in_reply_to_status_id)
-		ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Error: tweet lookup by status ID failed! (BUG?)"}}
+		ui.actionchan <- ActionShowMsg("Error: tweet lookup by status ID failed! (BUG?)")
 	}
 }
 
@@ -312,18 +312,18 @@ func (ui *UserInterface) HandleRawInput(input string) {
 		status_id, err := strconv.Atoi64(ui.form.Get("status_id"))
 		if err != nil {
 			log.Printf("conversion of %s failed: %v", ui.form.Get("status_id"), err)
-			ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Error: couldn't determine status ID! (BUG?)"}}
+			ui.actionchan <- ActionShowMsg("Error: couldn't determine status ID! (BUG?)")
 			break
 		}
 		status_id_ptr := new(int64)
 		*status_id_ptr = status_id
-		ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Retweeting..."}}
-		ui.cmdchan <- TwitterCommand{Cmd: RETWEET, Data: Tweet{Id: status_id_ptr}}
+		ui.actionchan <- ActionShowMsg("Retweeting...")
+		ui.cmdchan <- CmdRetweet(Tweet{Id: status_id_ptr})
 	case "^E":
 		rt_status_id, err := strconv.Atoi64(ui.form.Get("status_id"))
 		if err != nil {
 			log.Printf("conversion of %s failed: %v", ui.form.Get("status_id"), err)
-			ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Error: couldn't determine status ID! (BUG?)"}}
+			ui.actionchan <- ActionShowMsg("Error: couldn't determine status ID! (BUG?)")
 			break
 		}
 		tweet := ui.LookupTweet(rt_status_id)
@@ -332,51 +332,45 @@ func (ui *UserInterface) HandleRawInput(input string) {
 			ui.SetInputField("Tweet: ", rt_text, "end-input", true)
 		} else {
 			log.Printf("tweet lookup for %d failed\n", ui.in_reply_to_status_id)
-			ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Error: tweet lookup by status ID failed! (BUG?)"}}
+			ui.actionchan <- ActionShowMsg("Error: tweet lookup by status ID failed! (BUG?)")
 		}
 	case "^F":
 		status_id, err := strconv.Atoi64(ui.form.Get("status_id"))
 		if err != nil {
 			log.Printf("conversion of %s failed: %v", ui.form.Get("status_id"), err)
-			ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Error: couldn't determine status ID! (BUG?)"}}
+			ui.actionchan <- ActionShowMsg("Error: couldn't determine status ID! (BUG?)")
 			break
 		}
 		status_id_ptr := new(int64)
 		*status_id_ptr = status_id
-		ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Favoriting..."}}
-		ui.cmdchan <- TwitterCommand{Cmd: FAVORITE, Data: Tweet{Id: status_id_ptr}}
+		ui.actionchan <- ActionShowMsg("Favoriting...")
+		ui.cmdchan <- CmdFavorite(Tweet{Id: status_id_ptr})
 	case "F":
 		ui.SetInputField("Follow: ", "", "end-input-follow", false)
 	case "end-input-follow":
-		screen_name := new(string)
-		*screen_name = ui.form.Get("inputfield")
-		data := Tweet{
-			User: &TwitterUser{
-				Screen_name: screen_name,
-			},
-		}
-		ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Following " + *screen_name + "..."}}
-		ui.cmdchan <- TwitterCommand{Cmd: FOLLOW, Data: data}
+		screen_name := ui.form.Get("inputfield")
+		ui.actionchan <- ActionShowMsg("Following " + screen_name + "...")
+		ui.cmdchan <- CmdFollow(screen_name)
 		ui.ResetLastLine()
 	case "U":
 		if status_id, err := strconv.Atoi64(ui.form.Get("status_id")); err == nil {
 			if tweet := ui.LookupTweet(status_id); tweet != nil {
-				ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Unfollowing " + *tweet.User.Screen_name + "..."}}
-				ui.cmdchan <- TwitterCommand{Cmd: UNFOLLOW, Data: *tweet}
+				ui.actionchan <- ActionShowMsg("Unfollowing " + *tweet.User.Screen_name + "...")
+				ui.cmdchan <- CmdUnfollow(*tweet.User)
 			}
 		}
 	case "D":
 		if status_id, err := strconv.Atoi64(ui.form.Get("status_id")); err == nil {
 			if tweet := ui.LookupTweet(status_id); tweet != nil {
-				ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Deleting tweet..."}}
-				ui.cmdchan <- TwitterCommand{Cmd: DESTROY_TWEET, Data: *tweet}
+				ui.actionchan <- ActionShowMsg("Deleting tweet...")
+				ui.cmdchan <- CmdDestroyTweet(*tweet)
 			}
 		}
 	case "1", "2", "3", "4", "5", "6", "7", "8", "9":
 		pos, _ := strconv.Atoi(input)
 		pos -= 1
 		if pos < len(ui.users) {
-			ui.cmdchan <- TwitterCommand{Cmd: SET_CURUSER, Pos: uint(pos)}
+			ui.cmdchan <- CmdSetCurUser(pos)
 			ui.cur_user = uint(pos)
 			ui.UpdateUserList()
 		}
@@ -390,12 +384,13 @@ func (ui *UserInterface) HandleRawInput(input string) {
 				*t.In_reply_to_status_id = ui.in_reply_to_status_id
 				ui.in_reply_to_status_id = int64(0)
 			}
-			ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Posting tweet..."}}
-			ui.cmdchan <- TwitterCommand{Cmd: UPDATE, Data: t}
+			ui.actionchan <- ActionShowMsg("Posting tweet...")
+			ui.cmdchan <- CmdUpdate(t)
 		}
 		ui.ResetLastLine()
 	case "cancel-input":
 		ui.ResetLastLine()
+		ui.in_reply_to_status_id = 0
 	}
 	ui.form.Run(-1)
 }
@@ -414,12 +409,12 @@ func (ui *UserInterface) InputLoop() {
 			if !ui.confirm_quit {
 				break
 			} else {
-				ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{"Quit "+PROGRAM_NAME+" (y/[n])?"}}
+				ui.actionchan <- ActionShowMsg("Quit " + PROGRAM_NAME + " (y/[n])?")
 				event = ui.form.Run(0)
 				if event == "y" {
 					break
 				}
-				ui.actionchan <- UserInterfaceAction{SHOW_MSG, []string{""}}
+				ui.actionchan <- ActionShowMsg("")
 				event = ""
 			}
 		}
@@ -428,10 +423,10 @@ func (ui *UserInterface) InputLoop() {
 			if event == "^L" {
 				stfl.Reset()
 			} else {
-				ui.actionchan <- UserInterfaceAction{RAW_INPUT, []string{event}}
+				ui.actionchan <- ActionRawInput(event)
 			}
 		} else {
-			ui.actionchan <- UserInterfaceAction{Action: KEY_PRESS}
+			ui.actionchan <- ActionKeyPress{}
 		}
 	}
 	stfl.Reset()

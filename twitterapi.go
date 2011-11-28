@@ -591,7 +591,7 @@ func (e HTTPError) String() string {
 	return "HTTP code " + strconv.Itoa(int(e))
 }
 
-func (tapi *TwitterAPI) UserStream(tweetchan chan<- []*Tweet, actions chan<- UserInterfaceAction) {
+func (tapi *TwitterAPI) UserStream(tweetchan chan<- []*Tweet, actions chan<- interface{}) {
 	network_wait := INITIAL_NETWORK_WAIT
 	http_wait := INITIAL_HTTP_WAIT
 	last_network_backoff := time.Seconds()
@@ -625,7 +625,7 @@ func (tapi *TwitterAPI) UserStream(tweetchan chan<- []*Tweet, actions chan<- Use
 	}
 }
 
-func (tapi *TwitterAPI) doUserStream(tweetchan chan<- []*Tweet, actions chan<- UserInterfaceAction) os.Error {
+func (tapi *TwitterAPI) doUserStream(tweetchan chan<- []*Tweet, actions chan<- interface{}) os.Error {
 	resolve_urls := false
 
 	if tapi.config != nil {
@@ -665,8 +665,8 @@ func (tapi *TwitterAPI) doUserStream(tweetchan chan<- []*Tweet, actions chan<- U
 				continue
 			}
 
-			if action.Delete != nil && action.Delete.Status != nil && action.Delete.Status.Id_str != nil {
-				actions <- UserInterfaceAction{DELETE_TWEET, []string{*action.Delete.Status.Id_str}}
+			if action.Delete != nil && action.Delete.Status != nil && action.Delete.Status.Id != nil {
+				actions <- ActionDeleteTweet(*action.Delete.Status.Id)
 			}
 
 		} else {
