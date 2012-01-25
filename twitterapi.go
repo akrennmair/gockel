@@ -755,7 +755,7 @@ func (t *Tweet) RelativeCreatedAt() string {
 
 func longify_url(url string) string {
 	if resp, err := http.Head(url); err == nil && resp.Request != nil && resp.Request.URL != nil {
-		return resp.Request.URL.String()
+		return strings.Replace(resp.Request.URL.String(), "%23", "#", -1) // HACK, breaks real %23
 	}
 	return url
 }
