@@ -1,7 +1,7 @@
 package main
 
 import (
-	goconf "goconf.googlecode.com/hg"
+	goconf "github.com/akrennmair/goconf"
 	"log"
 	"sort"
 	"strings"
@@ -138,7 +138,7 @@ func (m *Model) HandleCommand(cmd interface{}) {
 				m.newtweets_int <- []*Tweet{newtweet}
 				m.uiactionchan <- ActionShowMsg("")
 			} else {
-				m.uiactionchan <- ActionShowMsg("Posting tweet failed: " + err.String())
+				m.uiactionchan <- ActionShowMsg("Posting tweet failed: " + err.Error())
 			}
 		}(m.cur_user)
 	case CmdRetweet:
@@ -147,7 +147,7 @@ func (m *Model) HandleCommand(cmd interface{}) {
 				m.newtweets_int <- []*Tweet{newtweet}
 				m.uiactionchan <- ActionShowMsg("")
 			} else {
-				m.uiactionchan <- ActionShowMsg("Retweeting failed:" + err.String())
+				m.uiactionchan <- ActionShowMsg("Retweeting failed:" + err.Error())
 			}
 		}(m.cur_user)
 	case CmdFavorite:
@@ -155,7 +155,7 @@ func (m *Model) HandleCommand(cmd interface{}) {
 			if err := m.users[cur_user].Tapi.Favorite(Tweet(v)); err == nil {
 				m.uiactionchan <- ActionShowMsg("")
 			} else {
-				m.uiactionchan <- ActionShowMsg("Favoriting tweet failed: " + err.String())
+				m.uiactionchan <- ActionShowMsg("Favoriting tweet failed: " + err.Error())
 			}
 		}(m.cur_user)
 	case CmdFollow:
@@ -163,7 +163,7 @@ func (m *Model) HandleCommand(cmd interface{}) {
 			if err := m.users[cur_user].Tapi.Follow(string(v)); err == nil {
 				m.uiactionchan <- ActionShowMsg("")
 			} else {
-				m.uiactionchan <- ActionShowMsg("Following " + string(v) + " failed: " + err.String())
+				m.uiactionchan <- ActionShowMsg("Following " + string(v) + " failed: " + err.Error())
 			}
 		}(m.cur_user)
 	case CmdUnfollow:
@@ -171,7 +171,7 @@ func (m *Model) HandleCommand(cmd interface{}) {
 			if err := m.users[cur_user].Tapi.Unfollow(TwitterUser(v)); err == nil {
 				m.uiactionchan <- ActionShowMsg("")
 			} else {
-				m.uiactionchan <- ActionShowMsg("Unfollowing " + *TwitterUser(v).Screen_name + " failed: " + err.String())
+				m.uiactionchan <- ActionShowMsg("Unfollowing " + *TwitterUser(v).Screen_name + " failed: " + err.Error())
 			}
 		}(m.cur_user)
 	case CmdDestroyTweet:
@@ -179,7 +179,7 @@ func (m *Model) HandleCommand(cmd interface{}) {
 			if err := m.users[cur_user].Tapi.DestroyTweet(Tweet(v)); err == nil {
 				m.uiactionchan <- ActionShowMsg("")
 			} else {
-				m.uiactionchan <- ActionShowMsg("Deleting tweet failed: " + err.String())
+				m.uiactionchan <- ActionShowMsg("Deleting tweet failed: " + err.Error())
 			}
 		}(m.cur_user)
 	case CmdSetCurUser:

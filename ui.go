@@ -3,15 +3,14 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"strconv"
-	"os"
+	stfl "github.com/akrennmair/go-stfl"
+	goconf "github.com/akrennmair/goconf"
 	"html"
-	"utf8"
 	"log"
 	"regexp"
+	"strconv"
 	"strings"
-	stfl "github.com/akrennmair/go-stfl"
-	goconf "goconf.googlecode.com/hg"
+	"unicode/utf8"
 )
 
 type UserInterface struct {
@@ -183,8 +182,8 @@ func (ui *UserInterface) HandleAction(action interface{}) {
 		ui.HandleRawInput(string(v))
 	case ActionDeleteTweet:
 		delete_id := int64(v)
-		ui.form.Modify(strconv.Itoa64(delete_id), "delete", "")
-		if current_status_id, err := strconv.Atoi64(ui.form.Get("status_id")); err == nil {
+		ui.form.Modify(strconv.FormatInt(delete_id, 10), "delete", "")
+		if current_status_id, err := strconv.ParseInt(ui.form.Get("status_id"), 10, 64); err == nil {
 			if delete_id > current_status_id {
 				ui.IncrementPosition(-1)
 			}
@@ -252,7 +251,7 @@ func (ui *UserInterface) UpdateRemaining() {
 }
 
 func (ui *UserInterface) UpdateInfoLine() {
-	status_id, err := strconv.Atoi64(ui.form.Get("status_id"))
+	status_id, err := strconv.ParseInt(ui.form.Get("status_id"), 10, 64)
 	if err != nil {
 		return
 	}
@@ -280,8 +279,8 @@ func (ui *UserInterface) UpdateInfoLine() {
 }
 
 func (ui *UserInterface) StartReply(public bool) {
-	var err os.Error
-	ui.in_reply_to_status_id, err = strconv.Atoi64(ui.form.Get("status_id"))
+	var err error
+	ui.in_reply_to_status_id, err = strconv.ParseInt(ui.form.Get("status_id"), 10, 64)
 	if err != nil {
 		log.Printf("conversion of %s failed: %v", ui.form.Get("status_id"), err)
 		ui.actionchan <- ActionShowMsg("Error: couldn't determine status ID! (BUG?)")
@@ -309,7 +308,7 @@ func (ui *UserInterface) HandleRawInput(input string) {
 	case "r":
 		ui.StartReply(false)
 	case "^R":
-		status_id, err := strconv.Atoi64(ui.form.Get("status_id"))
+		status_id, err := strconv.ParseInt(ui.form.Get("status_id"), 10, 64)
 		if err != nil {
 			log.Printf("conversion of %s failed: %v", ui.form.Get("status_id"), err)
 			ui.actionchan <- ActionShowMsg("Error: couldn't determine status ID! (BUG?)")
@@ -320,7 +319,7 @@ func (ui *UserInterface) HandleRawInput(input string) {
 		ui.actionchan <- ActionShowMsg("Retweeting...")
 		ui.cmdchan <- CmdRetweet(Tweet{Id: status_id_ptr})
 	case "^E":
-		rt_status_id, err := strconv.Atoi64(ui.form.Get("status_id"))
+		rt_status_id, err := strconv.ParseInt(ui.form.Get("status_id"), 10, 64)
 		if err != nil {
 			log.Printf("conversion of %s failed: %v", ui.form.Get("status_id"), err)
 			ui.actionchan <- ActionShowMsg("Error: couldn't determine status ID! (BUG?)")
@@ -335,7 +334,7 @@ func (ui *UserInterface) HandleRawInput(input string) {
 			ui.actionchan <- ActionShowMsg("Error: tweet lookup by status ID failed! (BUG?)")
 		}
 	case "^F":
-		status_id, err := strconv.Atoi64(ui.form.Get("status_id"))
+		status_id, err := strconv.ParseInt(ui.form.Get("status_id"), 10, 64)
 		if err != nil {
 			log.Printf("conversion of %s failed: %v", ui.form.Get("status_id"), err)
 			ui.actionchan <- ActionShowMsg("Error: couldn't determine status ID! (BUG?)")
@@ -353,14 +352,14 @@ func (ui *UserInterface) HandleRawInput(input string) {
 		ui.cmdchan <- CmdFollow(screen_name)
 		ui.ResetLastLine()
 	case "U":
-		if status_id, err := strconv.Atoi64(ui.form.Get("status_id")); err == nil {
+		if status_id, err := strconv.ParseInt(ui.form.Get("status_id"), 10, 64); err == nil {
 			if tweet := ui.LookupTweet(status_id); tweet != nil {
 				ui.actionchan <- ActionShowMsg("Unfollowing " + *tweet.User.Screen_name + "...")
 				ui.cmdchan <- CmdUnfollow(*tweet.User)
 			}
 		}
 	case "D":
-		if status_id, err := strconv.Atoi64(ui.form.Get("status_id")); err == nil {
+		if status_id, err := strconv.ParseInt(ui.form.Get("status_id"), 10, 64); err == nil {
 			if tweet := ui.LookupTweet(status_id); tweet != nil {
 				ui.actionchan <- ActionShowMsg("Deleting tweet...")
 				ui.cmdchan <- CmdDestroyTweet(*tweet)

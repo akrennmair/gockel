@@ -1,16 +1,16 @@
 package main
 
 import (
+	"encoding/json"
+	"flag"
 	"fmt"
+	oauth "github.com/akrennmair/goauth"
+	goconf "github.com/akrennmair/goconf"
+	"io/ioutil"
+	"log"
 	"os"
 	"os/user"
-	"json"
-	"io/ioutil"
-	"flag"
-	"log"
 	"strings"
-	oauth "github.com/akrennmair/goauth"
-	goconf "goconf.googlecode.com/hg"
 )
 
 const (
@@ -24,7 +24,7 @@ const (
 
 type DevNullWriter int
 
-func (w *DevNullWriter) Write(b []byte) (n int, err os.Error) {
+func (w *DevNullWriter) Write(b []byte) (n int, err error) {
 	return len(b), nil
 }
 
@@ -117,7 +117,7 @@ func main() {
 	ui.InputLoop()
 }
 
-func SaveAccessToken(at *oauth.AccessToken, cfgdir string, suffix string) os.Error {
+func SaveAccessToken(at *oauth.AccessToken, cfgdir string, suffix string) error {
 	data, marshalerr := json.Marshal(at)
 	if marshalerr != nil {
 		return marshalerr
@@ -147,7 +147,7 @@ type UserTwitterAPITuple struct {
 	Tapi *TwitterAPI
 }
 
-func LoadAccessTokens(cfgdir string, cfg *goconf.ConfigFile) ([]UserTwitterAPITuple, os.Error) {
+func LoadAccessTokens(cfgdir string, cfg *goconf.ConfigFile) ([]UserTwitterAPITuple, error) {
 	users := []UserTwitterAPITuple{}
 
 	f, err := os.Open(cfgdir)
@@ -166,16 +166,16 @@ func LoadAccessTokens(cfgdir string, cfg *goconf.ConfigFile) ([]UserTwitterAPITu
 	log.Printf("found %d files in %s", len(files), cfgdir)
 
 	for _, fi := range files {
-		log.Printf("file: %s", fi.Name)
-		if strings.HasPrefix(fi.Name, "access_token.json") {
-			if at, err := LoadAccessToken(cfgdir + "/" + fi.Name); err == nil {
+		log.Printf("file: %s", fi.Name())
+		if strings.HasPrefix(fi.Name(), "access_token.json") {
+			if at, err := LoadAccessToken(cfgdir + "/" + fi.Name()); err == nil {
 				tapi := NewTwitterAPI(CONSUMER_KEY, CONSUMER_SECRET, cfg)
 				tapi.SetAccessToken(at)
 				if user, err := tapi.VerifyCredentials(); err == nil {
 					users = append(users, UserTwitterAPITuple{User: *user.Screen_name, Tapi: tapi})
 				}
 			} else {
-				log.Printf("loading access token from %s failed: %v", fi.Name, err)
+				log.Printf("loading access token from %s failed: %v", fi.Name(), err)
 			}
 		}
 	}
@@ -183,7 +183,7 @@ func LoadAccessTokens(cfgdir string, cfg *goconf.ConfigFile) ([]UserTwitterAPITu
 	return users, nil
 }
 
-func LoadAccessToken(file string) (*oauth.AccessToken, os.Error) {
+func LoadAccessToken(file string) (*oauth.AccessToken, error) {
 	f, ferr := os.Open(file)
 	if ferr != nil {
 		return nil, ferr
@@ -227,7 +227,7 @@ func getHomeDir() string {
 	return ""
 }
 
-func AddUser(tapi *TwitterAPI, cfgdir string) os.Error {
+func AddUser(tapi *TwitterAPI, cfgdir string) error {
 	auth_url, err := tapi.GetRequestAuthorizationURL()
 	if err != nil {
 		return err

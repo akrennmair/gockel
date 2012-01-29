@@ -1,19 +1,20 @@
 package main
 
 import (
-	oauth "github.com/akrennmair/goauth"
-	goconf "goconf.googlecode.com/hg"
-	"json"
-	"os"
-	"io/ioutil"
-	"strconv"
-	"fmt"
-	"http"
-	"strings"
-	"time"
 	"bufio"
 	"bytes"
+	"encoding/json"
+	"errors"
+	"fmt"
+	oauth "github.com/akrennmair/goauth"
+	goconf "github.com/akrennmair/goconf"
+	"io/ioutil"
 	"log"
+	"net/http"
+	"os"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type Timeline struct {
@@ -103,10 +104,10 @@ const (
 	access_token_url  = "https://twitter.com/oauth/access_token"
 	authorization_url = "https://twitter.com/oauth/authorize"
 
-	INITIAL_NETWORK_WAIT int64 = 250e6 // 250 milliseconds
-	INITIAL_HTTP_WAIT    int64 = 10e9  // 10 seconds
-	MAX_NETWORK_WAIT     int64 = 16e9  // 16 seconds
-	MAX_HTTP_WAIT        int64 = 240e9 // 240 seconds
+	INITIAL_NETWORK_WAIT time.Duration = 250e6 // 250 milliseconds
+	INITIAL_HTTP_WAIT    time.Duration = 10e9  // 10 seconds
+	MAX_NETWORK_WAIT     time.Duration = 16e9  // 16 seconds
+	MAX_HTTP_WAIT        time.Duration= 240e9 // 240 seconds
 )
 
 type TwitterAPI struct {
@@ -142,7 +143,7 @@ func NewTwitterAPI(consumer_key, consumer_secret string, cfg *goconf.ConfigFile)
 	return tapi
 }
 
-func (tapi *TwitterAPI) GetRequestAuthorizationURL() (string, os.Error) {
+func (tapi *TwitterAPI) GetRequestAuthorizationURL() (string, error) {
 	s, rt, err := tapi.authcon.GetRequestAuthorizationURL()
 	tapi.request_token = rt
 	return s, err
@@ -165,113 +166,113 @@ func (tapi *TwitterAPI) GetAccessToken() *oauth.AccessToken {
 	return tapi.access_token
 }
 
-func (tapi *TwitterAPI) HomeTimeline(count uint, since_id int64) (*Timeline, os.Error) {
+func (tapi *TwitterAPI) HomeTimeline(count uint, since_id int64) (*Timeline, error) {
 	return tapi.get_timeline("home_timeline",
 		func() *oauth.Pair {
 			if count != 0 {
-				return &oauth.Pair{"count", strconv.Uitoa(count)}
+				return &oauth.Pair{"count", strconv.FormatUint(uint64(count), 10)}
 			}
 			return nil
 		}(),
 		func() *oauth.Pair {
 			if since_id != 0 {
-				return &oauth.Pair{"since_id", strconv.Itoa64(since_id)}
+				return &oauth.Pair{"since_id", strconv.FormatInt(since_id, 10)}
 			}
 			return nil
 		}())
 }
 
-func (tapi *TwitterAPI) Mentions(count uint, since_id int64) (*Timeline, os.Error) {
+func (tapi *TwitterAPI) Mentions(count uint, since_id int64) (*Timeline, error) {
 	return tapi.get_timeline("mentions",
 		func() *oauth.Pair {
 			if count != 0 {
-				return &oauth.Pair{"count", strconv.Uitoa(count)}
+				return &oauth.Pair{"count", strconv.FormatUint(uint64(count), 10)}
 			}
 			return nil
 		}(),
 		func() *oauth.Pair {
 			if since_id != 0 {
-				return &oauth.Pair{"since_id", strconv.Itoa64(since_id)}
+				return &oauth.Pair{"since_id", strconv.FormatInt(since_id, 10)}
 			}
 			return nil
 		}())
 }
 
-func (tapi *TwitterAPI) PublicTimeline(count uint, since_id int64) (*Timeline, os.Error) {
+func (tapi *TwitterAPI) PublicTimeline(count uint, since_id int64) (*Timeline, error) {
 	return tapi.get_timeline("public_timeline",
 		func() *oauth.Pair {
 			if count != 0 {
-				return &oauth.Pair{"count", strconv.Uitoa(count)}
+				return &oauth.Pair{"count", strconv.FormatUint(uint64(count), 10)}
 			}
 			return nil
 		}(),
 		func() *oauth.Pair {
 			if since_id != 0 {
-				return &oauth.Pair{"since_id", strconv.Itoa64(since_id)}
+				return &oauth.Pair{"since_id", strconv.FormatInt(since_id, 10)}
 			}
 			return nil
 		}())
 }
 
-func (tapi *TwitterAPI) RetweetedByMe(count uint, since_id int64) (*Timeline, os.Error) {
+func (tapi *TwitterAPI) RetweetedByMe(count uint, since_id int64) (*Timeline, error) {
 	return tapi.get_timeline("retweeted_by_me",
 		func() *oauth.Pair {
 			if count != 0 {
-				return &oauth.Pair{"count", strconv.Uitoa(count)}
+				return &oauth.Pair{"count", strconv.FormatUint(uint64(count), 10)}
 			}
 			return nil
 		}(),
 		func() *oauth.Pair {
 			if since_id != 0 {
-				return &oauth.Pair{"since_id", strconv.Itoa64(since_id)}
+				return &oauth.Pair{"since_id", strconv.FormatInt(since_id, 10)}
 			}
 			return nil
 		}())
 }
 
-func (tapi *TwitterAPI) RetweetedToMe(count uint, since_id int64) (*Timeline, os.Error) {
+func (tapi *TwitterAPI) RetweetedToMe(count uint, since_id int64) (*Timeline, error) {
 	return tapi.get_timeline("retweeted_to_me",
 		func() *oauth.Pair {
 			if count != 0 {
-				return &oauth.Pair{"count", strconv.Uitoa(count)}
+				return &oauth.Pair{"count", strconv.FormatUint(uint64(count), 10)}
 			}
 			return nil
 		}(),
 		func() *oauth.Pair {
 			if since_id != 0 {
-				return &oauth.Pair{"since_id", strconv.Itoa64(since_id)}
+				return &oauth.Pair{"since_id", strconv.FormatInt(since_id, 10)}
 			}
 			return nil
 		}())
 }
 
-func (tapi *TwitterAPI) RetweetsOfMe(count uint, since_id int64) (*Timeline, os.Error) {
+func (tapi *TwitterAPI) RetweetsOfMe(count uint, since_id int64) (*Timeline, error) {
 	return tapi.get_timeline("retweets_of_me",
 		func() *oauth.Pair {
 			if count != 0 {
-				return &oauth.Pair{"count", strconv.Uitoa(count)}
+				return &oauth.Pair{"count", strconv.FormatUint(uint64(count), 10)}
 			}
 			return nil
 		}(),
 		func() *oauth.Pair {
 			if since_id != 0 {
-				return &oauth.Pair{"since_id", strconv.Itoa64(since_id)}
+				return &oauth.Pair{"since_id", strconv.FormatInt(since_id, 10)}
 			}
 			return nil
 		}())
 }
 
-func (tapi *TwitterAPI) UserTimeline(screen_name string, count uint, since_id int64) (*Timeline, os.Error) {
+func (tapi *TwitterAPI) UserTimeline(screen_name string, count uint, since_id int64) (*Timeline, error) {
 	return tapi.get_timeline("user_timeline",
 		func() *oauth.Pair {
 			if count != 0 {
-				return &oauth.Pair{"count", strconv.Uitoa(count)}
+				return &oauth.Pair{"count", strconv.FormatUint(uint64(count), 10)}
 			}
 			return nil
 		}(),
 		func() *oauth.Pair {
 			if since_id != 0 {
-				return &oauth.Pair{"since_id", strconv.Itoa64(since_id)}
+				return &oauth.Pair{"since_id", strconv.FormatInt(since_id, 10)}
 			}
 			return nil
 		}(),
@@ -283,17 +284,17 @@ func (tapi *TwitterAPI) UserTimeline(screen_name string, count uint, since_id in
 		}())
 }
 
-func (tapi *TwitterAPI) RetweetedToUser(screen_name string, count uint, since_id int64) (*Timeline, os.Error) {
+func (tapi *TwitterAPI) RetweetedToUser(screen_name string, count uint, since_id int64) (*Timeline, error) {
 	return tapi.get_timeline("retweeted_to_user",
 		func() *oauth.Pair {
 			if count != 0 {
-				return &oauth.Pair{"count", strconv.Uitoa(count)}
+				return &oauth.Pair{"count", strconv.FormatUint(uint64(count), 10)}
 			}
 			return nil
 		}(),
 		func() *oauth.Pair {
 			if since_id != 0 {
-				return &oauth.Pair{"since_id", strconv.Itoa64(since_id)}
+				return &oauth.Pair{"since_id", strconv.FormatInt(since_id, 10)}
 			}
 			return nil
 		}(),
@@ -305,17 +306,17 @@ func (tapi *TwitterAPI) RetweetedToUser(screen_name string, count uint, since_id
 		}())
 }
 
-func (tapi *TwitterAPI) RetweetedByUser(screen_name string, count uint, since_id int64) (*Timeline, os.Error) {
+func (tapi *TwitterAPI) RetweetedByUser(screen_name string, count uint, since_id int64) (*Timeline, error) {
 	return tapi.get_timeline("retweeted_by_user",
 		func() *oauth.Pair {
 			if count != 0 {
-				return &oauth.Pair{"count", strconv.Uitoa(count)}
+				return &oauth.Pair{"count", strconv.FormatUint(uint64(count), 10)}
 			}
 			return nil
 		}(),
 		func() *oauth.Pair {
 			if since_id != 0 {
-				return &oauth.Pair{"since_id", strconv.Itoa64(since_id)}
+				return &oauth.Pair{"since_id", strconv.FormatInt(since_id, 10)}
 			}
 			return nil
 		}(),
@@ -327,11 +328,11 @@ func (tapi *TwitterAPI) RetweetedByUser(screen_name string, count uint, since_id
 		}())
 }
 
-func (tapi *TwitterAPI) RetweetedBy(tweet_id int64, count uint) (*UserList, os.Error) {
-	jsondata, err := tapi.get_statuses(strconv.Itoa64(tweet_id)+"/retweeted_by",
+func (tapi *TwitterAPI) RetweetedBy(tweet_id int64, count uint) (*UserList, error) {
+	jsondata, err := tapi.get_statuses(strconv.FormatInt(tweet_id, 10)+"/retweeted_by",
 		func() *oauth.Pair {
 			if count != 0 {
-				return &oauth.Pair{"count", strconv.Uitoa(count)}
+				return &oauth.Pair{"count", strconv.FormatUint(uint64(count), 10)}
 			}
 			return nil
 		}())
@@ -348,11 +349,11 @@ func (tapi *TwitterAPI) RetweetedBy(tweet_id int64, count uint) (*UserList, os.E
 	return ul, nil
 }
 
-func (tapi *TwitterAPI) RetweetedByIds(tweet_id int64, count uint) (*UserIdList, os.Error) {
-	jsondata, err := tapi.get_statuses(strconv.Itoa64(tweet_id)+"/retweeted_by/ids",
+func (tapi *TwitterAPI) RetweetedByIds(tweet_id int64, count uint) (*UserIdList, error) {
+	jsondata, err := tapi.get_statuses(strconv.FormatInt(tweet_id, 10)+"/retweeted_by/ids",
 		func() *oauth.Pair {
 			if count != 0 {
-				return &oauth.Pair{"count", strconv.Uitoa(count)}
+				return &oauth.Pair{"count", strconv.FormatUint(uint64(count), 10)}
 			}
 			return nil
 		}())
@@ -369,7 +370,7 @@ func (tapi *TwitterAPI) RetweetedByIds(tweet_id int64, count uint) (*UserIdList,
 	return uidl, nil
 }
 
-func (tapi *TwitterAPI) Update(tweet Tweet) (*Tweet, os.Error) {
+func (tapi *TwitterAPI) Update(tweet Tweet) (*Tweet, error) {
 	params := oauth.Params{
 		&oauth.Pair{
 			Key:   "status",
@@ -377,7 +378,7 @@ func (tapi *TwitterAPI) Update(tweet Tweet) (*Tweet, os.Error) {
 		},
 	}
 	if tweet.In_reply_to_status_id != nil && *tweet.In_reply_to_status_id != int64(0) {
-		params = append(params, &oauth.Pair{"in_reply_to_status_id", strconv.Itoa64(*tweet.In_reply_to_status_id)})
+		params = append(params, &oauth.Pair{"in_reply_to_status_id", strconv.FormatInt(*tweet.In_reply_to_status_id, 10)})
 	}
 	resp, err := tapi.authcon.Post("https://api.twitter.com/1/statuses/update.json", params, tapi.access_token)
 	if err != nil {
@@ -387,7 +388,7 @@ func (tapi *TwitterAPI) Update(tweet Tweet) (*Tweet, os.Error) {
 	tapi.UpdateRatelimit(resp.Header)
 
 	if resp.StatusCode == 403 {
-		return nil, os.NewError(resp.Status)
+		return nil, errors.New(resp.Status)
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)
@@ -404,7 +405,7 @@ func (tapi *TwitterAPI) Update(tweet Tweet) (*Tweet, os.Error) {
 	return newtweet, nil
 }
 
-func (tapi *TwitterAPI) Retweet(tweet Tweet) (*Tweet, os.Error) {
+func (tapi *TwitterAPI) Retweet(tweet Tweet) (*Tweet, error) {
 	resp, err := tapi.authcon.Post(fmt.Sprintf("https://api.twitter.com/1/statuses/retweet/%d.json", *tweet.Id), oauth.Params{}, tapi.access_token)
 	if err != nil {
 		return nil, err
@@ -413,7 +414,7 @@ func (tapi *TwitterAPI) Retweet(tweet Tweet) (*Tweet, os.Error) {
 	tapi.UpdateRatelimit(resp.Header)
 
 	if resp.StatusCode == 403 {
-		return nil, os.NewError(resp.Status)
+		return nil, errors.New(resp.Status)
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)
@@ -429,20 +430,20 @@ func (tapi *TwitterAPI) Retweet(tweet Tweet) (*Tweet, os.Error) {
 	return newtweet, nil
 }
 
-func (tapi *TwitterAPI) Favorite(tweet Tweet) os.Error {
+func (tapi *TwitterAPI) Favorite(tweet Tweet) error {
 	resp, err := tapi.authcon.Post(fmt.Sprintf("https://api.twitter.com/1/favorites/create/%d.json", *tweet.Id), oauth.Params{}, tapi.access_token)
 	if err != nil {
 		return err
 	}
 
 	if resp.StatusCode != 200 {
-		return os.NewError(resp.Status)
+		return errors.New(resp.Status)
 	}
 
 	return nil
 }
 
-func (tapi *TwitterAPI) Follow(screen_name string) os.Error {
+func (tapi *TwitterAPI) Follow(screen_name string) error {
 	params := oauth.Params{
 		&oauth.Pair{
 			Key:   "screen_name",
@@ -455,13 +456,13 @@ func (tapi *TwitterAPI) Follow(screen_name string) os.Error {
 	}
 
 	if resp.StatusCode != 200 {
-		return os.NewError(resp.Status)
+		return errors.New(resp.Status)
 	}
 
 	return nil
 }
 
-func (tapi *TwitterAPI) Unfollow(user TwitterUser) os.Error {
+func (tapi *TwitterAPI) Unfollow(user TwitterUser) error {
 	params := oauth.Params{
 		&oauth.Pair{
 			Key:   "user_id",
@@ -478,26 +479,26 @@ func (tapi *TwitterAPI) Unfollow(user TwitterUser) os.Error {
 	}
 
 	if resp.StatusCode != 200 {
-		return os.NewError(resp.Status)
+		return errors.New(resp.Status)
 	}
 
 	return nil
 }
 
-func (tapi *TwitterAPI) DestroyTweet(tweet Tweet) os.Error {
+func (tapi *TwitterAPI) DestroyTweet(tweet Tweet) error {
 	resp, err := tapi.authcon.Post(fmt.Sprintf("https://api.twitter.com/1/statuses/destroy/%d.json", *tweet.Id), oauth.Params{}, tapi.access_token)
 	if err != nil {
 		return err
 	}
 
 	if resp.StatusCode != 200 {
-		return os.NewError(resp.Status)
+		return errors.New(resp.Status)
 	}
 
 	return nil
 }
 
-func (tapi *TwitterAPI) Configuration() (*Configuration, os.Error) {
+func (tapi *TwitterAPI) Configuration() (*Configuration, error) {
 	params := oauth.Params{}
 	resp, err := tapi.authcon.Get("https://api.twitter.com/1/help/configuration.json", params, tapi.access_token)
 	if err != nil {
@@ -505,7 +506,7 @@ func (tapi *TwitterAPI) Configuration() (*Configuration, os.Error) {
 	}
 
 	if resp.StatusCode != 200 {
-		return nil, os.NewError(resp.Status)
+		return nil, errors.New(resp.Status)
 	}
 
 	jsondata, err := ioutil.ReadAll(resp.Body)
@@ -521,7 +522,7 @@ func (tapi *TwitterAPI) Configuration() (*Configuration, os.Error) {
 	return config, nil
 }
 
-func (tapi *TwitterAPI) VerifyCredentials() (*TwitterUser, os.Error) {
+func (tapi *TwitterAPI) VerifyCredentials() (*TwitterUser, error) {
 	params := oauth.Params{
 		&oauth.Pair{
 			Key:   "skip_status",
@@ -535,7 +536,7 @@ func (tapi *TwitterAPI) VerifyCredentials() (*TwitterUser, os.Error) {
 	}
 
 	if resp.StatusCode != 200 {
-		return nil, os.NewError(resp.Status)
+		return nil, errors.New(resp.Status)
 	}
 
 	jsondata, err := ioutil.ReadAll(resp.Body)
@@ -552,7 +553,7 @@ func (tapi *TwitterAPI) VerifyCredentials() (*TwitterUser, os.Error) {
 	return user, nil
 }
 
-func (tapi *TwitterAPI) get_timeline(tl_name string, p ...*oauth.Pair) (*Timeline, os.Error) {
+func (tapi *TwitterAPI) get_timeline(tl_name string, p ...*oauth.Pair) (*Timeline, error) {
 	jsondata, err := tapi.get_statuses(tl_name, p...)
 	if err != nil {
 		return nil, err
@@ -567,7 +568,7 @@ func (tapi *TwitterAPI) get_timeline(tl_name string, p ...*oauth.Pair) (*Timelin
 	return tl, nil
 }
 
-func (tapi *TwitterAPI) get_statuses(id string, p ...*oauth.Pair) ([]byte, os.Error) {
+func (tapi *TwitterAPI) get_statuses(id string, p ...*oauth.Pair) ([]byte, error) {
 	var params oauth.Params
 	for _, x := range p {
 		if x != nil {
@@ -587,21 +588,21 @@ func (tapi *TwitterAPI) get_statuses(id string, p ...*oauth.Pair) ([]byte, os.Er
 
 type HTTPError int
 
-func (e HTTPError) String() string {
+func (e HTTPError) Error() string {
 	return "HTTP code " + strconv.Itoa(int(e))
 }
 
 func (tapi *TwitterAPI) UserStream(tweetchan chan<- []*Tweet, actions chan<- interface{}) {
 	network_wait := INITIAL_NETWORK_WAIT
 	http_wait := INITIAL_HTTP_WAIT
-	last_network_backoff := time.Seconds()
-	last_http_backoff := time.Seconds()
+	last_network_backoff := time.Now()
+	last_http_backoff := time.Now()
 
 	for {
 		if err := tapi.doUserStream(tweetchan, actions); err != nil {
 			log.Printf("user stream returned error: %v", err)
 			if _, ok := err.(HTTPError); ok {
-				if (time.Seconds() - last_http_backoff) > 1800 {
+				if (time.Now().Sub(last_http_backoff)) > 1800 {
 					http_wait = INITIAL_HTTP_WAIT
 				}
 				log.Printf("HTTP wait: backing off %d seconds", http_wait/1e9)
@@ -609,9 +610,9 @@ func (tapi *TwitterAPI) UserStream(tweetchan chan<- []*Tweet, actions chan<- int
 				if http_wait < MAX_HTTP_WAIT {
 					http_wait *= 2
 				}
-				last_http_backoff = time.Seconds()
+				last_http_backoff = time.Now()
 			} else {
-				if (time.Seconds() - last_network_backoff) > 1800 {
+				if (time.Now().Sub(last_network_backoff)) > 1800 {
 					network_wait = INITIAL_NETWORK_WAIT
 				}
 				log.Printf("Network wait: backing off %d milliseconds", network_wait/1e6)
@@ -619,13 +620,13 @@ func (tapi *TwitterAPI) UserStream(tweetchan chan<- []*Tweet, actions chan<- int
 				if network_wait < MAX_NETWORK_WAIT {
 					network_wait += INITIAL_NETWORK_WAIT
 				}
-				last_network_backoff = time.Seconds()
+				last_network_backoff = time.Now()
 			}
 		}
 	}
 }
 
-func (tapi *TwitterAPI) doUserStream(tweetchan chan<- []*Tweet, actions chan<- interface{}) os.Error {
+func (tapi *TwitterAPI) doUserStream(tweetchan chan<- []*Tweet, actions chan<- interface{}) error {
 	resolve_urls := false
 
 	if tapi.config != nil {
@@ -691,7 +692,7 @@ func (tapi *TwitterAPI) doUserStream(tweetchan chan<- []*Tweet, actions chan<- i
 	return nil
 }
 
-func getLine(buf *bufio.Reader) ([]byte, os.Error) {
+func getLine(buf *bufio.Reader) ([]byte, error) {
 	line := []byte{}
 	for {
 		data, isprefix, err := buf.ReadLine()
@@ -710,15 +711,15 @@ func (tapi *TwitterAPI) UpdateRatelimit(hdrs http.Header) {
 	for k, v := range hdrs {
 		switch strings.ToLower(k) {
 		case "x-ratelimit-limit":
-			if limit, err := strconv.Atoui(v[0]); err == nil {
-				tapi.ratelimit_limit = limit
+			if limit, err := strconv.ParseUint(v[0], 10, 0); err == nil {
+				tapi.ratelimit_limit = uint(limit)
 			}
 		case "x-ratelimit-remaining":
-			if rem, err := strconv.Atoui(v[0]); err == nil {
-				tapi.ratelimit_rem = rem
+			if rem, err := strconv.ParseUint(v[0], 10, 0); err == nil {
+				tapi.ratelimit_rem = uint(rem)
 			}
 		case "x-ratelimit-reset":
-			if reset, err := strconv.Atoi64(v[0]); err == nil {
+			if reset, err := strconv.ParseInt(v[0], 10, 64); err == nil {
 				tapi.ratelimit_reset = reset
 			}
 		}
@@ -735,7 +736,7 @@ func (t *Tweet) RelativeCreatedAt() string {
 		return *t.Created_at
 	}
 
-	delta := time.LocalTime().Seconds() - tt.Seconds()
+	delta := time.Now().Unix() - tt.Unix()
 	switch {
 	case delta < 60:
 		return "less than a minute ago"
