@@ -24,7 +24,7 @@ In particular, gockel depends upon the following packages:
 
 * github.com/akrennmair/goauth
 * github.com/akrennmair/go-stfl (you need to install libstfl before building it)
-* goconf.googlecode.com/hg
+* github.com/akrennmair/goconf
 
 Use goinstall to install these packages.
 
