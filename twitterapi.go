@@ -11,7 +11,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -150,7 +149,7 @@ func (tapi *TwitterAPI) GetRequestAuthorizationURL() (string, error) {
 }
 
 func (tapi *TwitterAPI) GetRateLimit() (remaining uint, limit uint, reset int64) {
-	curtime, _, _ := os.Time()
+	curtime := time.Now().Unix()
 	return tapi.ratelimit_rem, tapi.ratelimit_limit, tapi.ratelimit_reset - curtime
 }
 

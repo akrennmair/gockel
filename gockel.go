@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/user"
 	"strings"
+	"strconv"
 )
 
 const (
@@ -219,7 +220,7 @@ func getHomeDir() string {
 	}
 
 	// then try lookup by uid
-	u_uid, err := user.LookupId(os.Getuid())
+	u_uid, err := user.LookupId(strconv.Itoa(os.Getuid()))
 	if err == nil {
 		return u_uid.HomeDir
 	}
