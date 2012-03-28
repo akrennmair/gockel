@@ -112,6 +112,9 @@ func (m *Model) Run() {
 				m.tweet_map[*t.Id] = t
 			}
 			m.tweets = append(tweets, m.tweets...)
+			if len(tweets) > 0 {
+				m.newtweetchan <- tweets
+			}
 		case tweets := <-new_tweets:
 			log.Printf("received %d tweets", len(tweets))
 			unique_tweets := []*Tweet{}
