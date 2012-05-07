@@ -99,9 +99,9 @@ type Configuration struct {
 }
 
 const (
-	request_token_url = "https://twitter.com/oauth/request_token"
-	access_token_url  = "https://twitter.com/oauth/access_token"
-	authorization_url = "https://twitter.com/oauth/authorize"
+	request_token_url = "https://api.twitter.com/oauth/request_token"
+	access_token_url  = "https://api.twitter.com/oauth/access_token"
+	authorization_url = "https://api.twitter.com/oauth/authorize"
 
 	INITIAL_NETWORK_WAIT time.Duration = 250e6 // 250 milliseconds
 	INITIAL_HTTP_WAIT    time.Duration = 10e9  // 10 seconds
@@ -753,11 +753,19 @@ func (t *Tweet) RelativeCreatedAt() string {
 	return fmt.Sprintf("%d days ago", delta/(3600*24))
 }
 
-func longify_url(url string) string {
+func longify_url(url string) (longurl string) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("longify_url: %v", r)
+			longurl = url
+		}
+	}()
 	if resp, err := http.Head(url); err == nil && resp.Request != nil && resp.Request.URL != nil {
-		return strings.Replace(resp.Request.URL.String(), "%23", "#", -1) // HACK, breaks real %23
+		longurl = strings.Replace(resp.Request.URL.String(), "%23", "#", -1) // HACK, breaks real %23
+	} else {
+		longurl = url
 	}
-	return url
+	return
 }
 
 func (t *Tweet) ResolveURLs() {
