@@ -17,7 +17,7 @@ You can download gockel here: https://github.com/akrennmair/gockel
 Building
 --------
 
-In order to build gockel, you can simply run "gomake" or "gb". But be aware that
+In order to build gockel, you can simply run "go build". But be aware that
 gockel requires a number of external packages that you need to install beforehand.
 
 In particular, gockel depends upon the following packages:
@@ -26,10 +26,7 @@ In particular, gockel depends upon the following packages:
 * github.com/akrennmair/go-stfl (you need to install libstfl before building it)
 * github.com/akrennmair/goconf
 
-Use goinstall to install these packages.
-
-If you want to install gockel into your path, run "gomake install" or "gb -i". To
-uninstall, run "gomake nuke" or "gb -N".
+Use "go get" to install these packages.
 
 Using
 -----

@@ -123,8 +123,8 @@ func (m *Model) Run() {
 					m.tweet_map[*t.Id] = t
 					unique_tweets = append(unique_tweets, t)
 				}
-				m.tweets = append(unique_tweets, m.tweets...)
 			}
+			m.tweets = append(unique_tweets, m.tweets...)
 			log.Printf("received %d tweets (%d unique)", len(tweets), len(unique_tweets))
 			if len(unique_tweets) > 0 {
 				m.newtweetchan <- unique_tweets

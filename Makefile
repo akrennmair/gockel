@@ -1,17 +1,12 @@
-include $(GOROOT)/src/Make.inc
-
 TARG=gockel
+GO_SRC=$(wildcard *.go)
 
-GOFILES=gockel.go \
-		twitterapi.go \
-		model.go \
-		findurls.go \
-		ui.go
+all: $(TARG)
 
+$(TARG): $(GO_SRC)
+	go build -o $(TARG)
 
-include $(GOROOT)/src/Make.cmd
+clean:
+	$(RM) $(TARG)
 
-gofmt:
-	for f in $(GOFILES) ; do gofmt $$f > $$f.new ; mv $$f.new $$f ; done
-
-.PHONY: gofmt
+.PHONY: clean

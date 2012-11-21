@@ -6,6 +6,7 @@ import (
 	"fmt"
 	oauth "github.com/akrennmair/goauth"
 	goconf "github.com/akrennmair/goconf"
+	_ "github.com/surma/stacksignal"
 	"io/ioutil"
 	"log"
 	"os"
