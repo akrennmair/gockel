@@ -26,7 +26,7 @@ func FindURLs(text string, replacefunc func(string) string) string {
 
 		i = j
 
-		j = strings.IndexAny(text[i:], " ]>)")
+		j = strings.IndexAny(text[i:], " ]>)\r\n\t")
 		if j < 0 {
 			j = len(text)
 		} else {

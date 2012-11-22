@@ -33,6 +33,16 @@ func TestFindURLs(t *testing.T) {
 		t.Fatalf("FindURLs returned different string: %s", text)
 	}
 
+	text = FindURLs("foo https://barfoo.com/\nquux", func(u string) string {
+		if u != "https://barfoo.com/" {
+			t.Fatalf("extracted URL other than https://barfoo.com/: %s", u)
+		}
+		return u
+	})
+	if text != "foo https://barfoo.com/\nquux" {
+		t.Fatalf("FindURLs returned different string: %s", text)
+	}
+
 	text = FindURLs("foo http://quux.com/", func(u string) string {
 		if u != "http://quux.com/" {
 			t.Fatalf("extracted URL other than http://quux.com/: %s", u)
