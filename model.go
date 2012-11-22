@@ -108,28 +108,27 @@ func (m *Model) Run() {
 			req.Reply <- tweet
 			close(req.Reply)
 		case tweets := <-m.newtweets_int:
-			for _, t := range tweets {
-				m.tweet_map[*t.Id] = t
-			}
-			m.tweets = append(tweets, m.tweets...)
-			if len(tweets) > 0 {
-				m.newtweetchan <- tweets
-			}
+			m.forwardUniqueTweets(tweets)
 		case tweets := <-new_tweets:
-			log.Printf("received %d tweets", len(tweets))
-			unique_tweets := []*Tweet{}
-			for _, t := range tweets {
-				if _, contained := m.tweet_map[*t.Id]; !contained {
-					m.tweet_map[*t.Id] = t
-					unique_tweets = append(unique_tweets, t)
-				}
-			}
-			m.tweets = append(unique_tweets, m.tweets...)
-			log.Printf("received %d tweets (%d unique)", len(tweets), len(unique_tweets))
-			if len(unique_tweets) > 0 {
-				m.newtweetchan <- unique_tweets
-			}
+			m.forwardUniqueTweets(tweets)
 		}
+	}
+}
+
+func (m *Model) forwardUniqueTweets(tweets []*Tweet) {
+	log.Printf("received %d tweets", len(tweets))
+	unique_tweets := []*Tweet{}
+	for _, t := range tweets {
+		if _, contained := m.tweet_map[*t.Id]; !contained {
+			log.Printf("found unique tweet: %d (text = %s)", *t.Id, *t.Text)
+			m.tweet_map[*t.Id] = t
+			unique_tweets = append(unique_tweets, t)
+		}
+	}
+	m.tweets = append(unique_tweets, m.tweets...)
+	log.Printf("received %d tweets (%d unique)", len(tweets), len(unique_tweets))
+	if len(unique_tweets) > 0 {
+		m.newtweetchan <- unique_tweets
 	}
 }
 
