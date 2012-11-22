@@ -106,7 +106,7 @@ const (
 	INITIAL_NETWORK_WAIT time.Duration = 250e6 // 250 milliseconds
 	INITIAL_HTTP_WAIT    time.Duration = 10e9  // 10 seconds
 	MAX_NETWORK_WAIT     time.Duration = 16e9  // 16 seconds
-	MAX_HTTP_WAIT        time.Duration= 240e9 // 240 seconds
+	MAX_HTTP_WAIT        time.Duration = 240e9 // 240 seconds
 )
 
 type TwitterAPI struct {
