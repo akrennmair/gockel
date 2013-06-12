@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/akrennmair/epos"
 	goconf "github.com/akrennmair/goconf"
 	"log"
 	"sort"
@@ -20,6 +21,7 @@ type Model struct {
 	uiactionchan  chan<- interface{}
 	last_id       int64
 	ignored_users []string
+	store_tweets  chan []*Tweet
 }
 
 type TweetRequest struct {
@@ -52,6 +54,7 @@ func NewModel(users []UserTwitterAPITuple, cc chan interface{}, ntc chan<- []*Tw
 		tweet_map:     map[int64]*Tweet{},
 		uiactionchan:  uac,
 		ignored_users: []string{},
+		store_tweets:  make(chan[]*Tweet, 1),
 	}
 
 	if cfg != nil {
@@ -84,6 +87,8 @@ func (m *Model) Run() {
 	new_tweets := make(chan []*Tweet, 10)
 
 	go StartUserStreams(m.users, new_tweets, m.uiactionchan, m.ignored_users)
+
+	go m.storeTweets()
 
 	go func() {
 		for {
@@ -129,7 +134,32 @@ func (m *Model) forwardUniqueTweets(tweets []*Tweet) {
 	log.Printf("received %d tweets (%d unique)", len(tweets), len(unique_tweets))
 	if len(unique_tweets) > 0 {
 		m.newtweetchan <- unique_tweets
+		m.store_tweets <- unique_tweets
 	}
+}
+
+func (m *Model) storeTweets() {
+	db, err := epos.OpenDatabase("gockel.db", epos.STORAGE_DISKV)
+	if err != nil {
+		panic(err) // TODO: open database earlier to return proper error
+	}
+
+	tweet_coll := db.Coll("tweets")
+	user_coll := db.Coll("users")
+
+	user_coll.AddIndex("Screen_name")
+
+	for tweets := range m.store_tweets {
+		for _, t := range tweets {
+			tweet := *t // create copy 
+			user := tweet.User
+			tweet.User = nil
+			tweet_coll.Insert(tweet)
+			user_coll.Insert(user)
+		}
+	}
+
+	db.Close()
 }
 
 func (m *Model) HandleCommand(cmd interface{}) {
