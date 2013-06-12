@@ -379,7 +379,7 @@ func (tapi *TwitterAPI) Update(tweet Tweet) (*Tweet, error) {
 	if tweet.In_reply_to_status_id != nil && *tweet.In_reply_to_status_id != int64(0) {
 		params = append(params, &oauth.Pair{"in_reply_to_status_id", strconv.FormatInt(*tweet.In_reply_to_status_id, 10)})
 	}
-	resp, err := tapi.authcon.Post("https://api.twitter.com/1/statuses/update.json", params, tapi.access_token)
+	resp, err := tapi.authcon.Post("https://api.twitter.com/1.1/statuses/update.json", params, tapi.access_token)
 	if err != nil {
 		return nil, err
 	}
@@ -405,7 +405,7 @@ func (tapi *TwitterAPI) Update(tweet Tweet) (*Tweet, error) {
 }
 
 func (tapi *TwitterAPI) Retweet(tweet Tweet) (*Tweet, error) {
-	resp, err := tapi.authcon.Post(fmt.Sprintf("https://api.twitter.com/1/statuses/retweet/%d.json", *tweet.Id), oauth.Params{}, tapi.access_token)
+	resp, err := tapi.authcon.Post(fmt.Sprintf("https://api.twitter.com/1.1/statuses/retweet/%d.json", *tweet.Id), oauth.Params{}, tapi.access_token)
 	if err != nil {
 		return nil, err
 	}
@@ -430,7 +430,7 @@ func (tapi *TwitterAPI) Retweet(tweet Tweet) (*Tweet, error) {
 }
 
 func (tapi *TwitterAPI) Favorite(tweet Tweet) error {
-	resp, err := tapi.authcon.Post(fmt.Sprintf("https://api.twitter.com/1/favorites/create/%d.json", *tweet.Id), oauth.Params{}, tapi.access_token)
+	resp, err := tapi.authcon.Post(fmt.Sprintf("https://api.twitter.com/1.1/favorites/create/%d.json", *tweet.Id), oauth.Params{}, tapi.access_token)
 	if err != nil {
 		return err
 	}
@@ -449,7 +449,7 @@ func (tapi *TwitterAPI) Follow(screen_name string) error {
 			Value: screen_name,
 		},
 	}
-	resp, err := tapi.authcon.Post("https://api.twitter.com/1/friendships/create.json", params, tapi.access_token)
+	resp, err := tapi.authcon.Post("https://api.twitter.com/1.1/friendships/create.json", params, tapi.access_token)
 	if err != nil {
 		return err
 	}
@@ -472,7 +472,7 @@ func (tapi *TwitterAPI) Unfollow(user TwitterUser) error {
 			Value: *user.Screen_name,
 		},
 	}
-	resp, err := tapi.authcon.Post("https://api.twitter.com/1/friendships/destroy.json", params, tapi.access_token)
+	resp, err := tapi.authcon.Post("https://api.twitter.com/1.1/friendships/destroy.json", params, tapi.access_token)
 	if err != nil {
 		return err
 	}
@@ -485,7 +485,7 @@ func (tapi *TwitterAPI) Unfollow(user TwitterUser) error {
 }
 
 func (tapi *TwitterAPI) DestroyTweet(tweet Tweet) error {
-	resp, err := tapi.authcon.Post(fmt.Sprintf("https://api.twitter.com/1/statuses/destroy/%d.json", *tweet.Id), oauth.Params{}, tapi.access_token)
+	resp, err := tapi.authcon.Post(fmt.Sprintf("https://api.twitter.com/1.1/statuses/destroy/%d.json", *tweet.Id), oauth.Params{}, tapi.access_token)
 	if err != nil {
 		return err
 	}
@@ -499,7 +499,7 @@ func (tapi *TwitterAPI) DestroyTweet(tweet Tweet) error {
 
 func (tapi *TwitterAPI) Configuration() (*Configuration, error) {
 	params := oauth.Params{}
-	resp, err := tapi.authcon.Get("https://api.twitter.com/1/help/configuration.json", params, tapi.access_token)
+	resp, err := tapi.authcon.Get("https://api.twitter.com/1.1/help/configuration.json", params, tapi.access_token)
 	if err != nil {
 		return nil, err
 	}
@@ -529,7 +529,7 @@ func (tapi *TwitterAPI) VerifyCredentials() (*TwitterUser, error) {
 		},
 	}
 
-	resp, err := tapi.authcon.Get("https://api.twitter.com/1/account/verify_credentials.json", params, tapi.access_token)
+	resp, err := tapi.authcon.Get("https://api.twitter.com/1.1/account/verify_credentials.json", params, tapi.access_token)
 	if err != nil {
 		return nil, err
 	}
@@ -575,7 +575,7 @@ func (tapi *TwitterAPI) get_statuses(id string, p ...*oauth.Pair) ([]byte, error
 		}
 	}
 
-	resp, geterr := tapi.authcon.Get("https://api.twitter.com/1/statuses/"+id+".json", params, tapi.access_token)
+	resp, geterr := tapi.authcon.Get("https://api.twitter.com/1.1/statuses/"+id+".json", params, tapi.access_token)
 	if geterr != nil {
 		return nil, geterr
 	}
