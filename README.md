@@ -9,24 +9,14 @@ Gockel is a Twitter client for text terminals, written in the Go programming lan
 Currently, gockel is at a very early stage of development. Its predecessor is
 baconbird: http://synflood.at/baconbird.html
 
-Downloading
------------
-
-You can download gockel here: https://github.com/akrennmair/gockel
-
 Building
 --------
 
-In order to build gockel, you can simply run "go build". But be aware that
-gockel requires a number of external packages that you need to install beforehand.
+In order to build gockel, you first need to install libstfl. Then you can simply run
 
-In particular, gockel depends upon the following packages:
+	go get github.com/akrennmair/gockel
 
-* github.com/akrennmair/goauth
-* github.com/akrennmair/go-stfl (you need to install libstfl before building it)
-* github.com/akrennmair/goconf
-
-Use "go get" to install these packages.
+and after some time, you should have a binary named `gockel` in `$GOPATH/bin`.
 
 Using
 -----
